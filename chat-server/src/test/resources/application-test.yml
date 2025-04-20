@@ -1,0 +1,60 @@
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/test
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  redis:
+
+    host: localhost
+    port: 6380  # 테스트 환경
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        show_sql: false    # SQL 쿼리 숨기기
+        format_sql: false  # SQL 포맷팅 비활성화
+
+logging.level:
+  org.hibernate.SQL: OFF   # Hibernate SQL 로깅 끄기
+  org.hibernate.type.descriptor.sql: OFF  # SQL 파라미터 로깅 끄기
+  root: info              # 다른 로그는 info 레벨 유지
+  org.springframework: info
+  com.sns.project: debug  # 프로젝트 로그는 debug 레벨 유지
+
+app:
+  domain:
+    url: http://your-frontend-domain
+
+jwt:
+  expiration: 86400000  # 24시간
+  secret: ${JWT_SECRET:c2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQtc2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQK}
+
+springdoc:
+  api-docs:
+    enabled: true  # API 문서 활성화
+  swagger-ui:
+    path: /swagger-ui.html  # Swagger UI 접근 경로
+    operationsSorter: method  # API 문서에서 HTTP 메서드 정렬
+    tagsSorter: alpha  # API 태그 알파벳 정렬
+    display-request-duration: true  # 요청 처리 시간 표시
+
+gcs:
+  bucket-name:  sns-bucket02
+  credentials:
+    file-path: ${GOOGLE_APPLICATION_CREDENTIALS}

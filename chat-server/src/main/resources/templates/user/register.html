@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .profile-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 20px auto;
+            display: block;
+            border: 2px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <h2 class="text-center mb-4">회원가입</h2>
+                <form id="registerForm">
+                    <div class="text-center mb-3">
+                        <img id="profilePreview" src="/images/default-profile.png" class="profile-preview">
+                        <div class="mt-2">
+                            <label for="profileImage" class="btn btn-outline-secondary">
+                                프로필 이미지 선택
+                            </label>
+                            <input type="file" id="profileImage" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">이메일</label>
+                        <input type="email" class="form-control" id="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">비밀번호</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">이름</label>
+                        <input type="text" class="form-control" id="name" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">가입하기</button>
+                </form>
+                <div class="text-center mt-3">
+                    <a href="/api/user/login">이미 계정이 있으신가요? 로그인하기</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 이미지 미리보기 기능
+        document.getElementById('profileImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profilePreview').src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 폼 제출 처리
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('email', document.getElementById('email').value);
+            formData.append('password', document.getElementById('password').value);
+            formData.append('name', document.getElementById('name').value);
+            
+            const profileImage = document.getElementById('profileImage').files[0];
+            if (profileImage) {
+                formData.append('profile_image', profileImage);
+            }
+
+            fetch('/api/user/register', {
+                method: 'POST',
+                body: formData  // FormData 사용하여 파일 업로드
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('회원가입이 완료되었습니다.');
+                    window.location.href = '/api/user/login';
+                } else {
+                    throw new Error('회원가입에 실패했습니다.');
+                }
+            })
+            .catch(error => {
+                alert(error.message);
+            });
+        });
+    </script>
+</body>
+</html>
