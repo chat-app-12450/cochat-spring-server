@@ -1,0 +1,4 @@
+// sns-project/settings.gradle
+rootProject.name = 'sns-project'
+
+include 'chat-core', 'chat-server', 'chat-consumer'

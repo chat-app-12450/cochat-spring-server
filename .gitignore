@@ -1,0 +1,20 @@
+# 공통적으로 무시할 것들
+*.log
+*.class
+*.iml
+.DS_Store
+
+# Gradle
+.gradle/
+build/
+!*/src/main/**/build.gradle  # 예외적으로 포함할 것
+
+# IntelliJ
+.idea/
+*.iws
+*.ipr
+*.iml
+
+# OS별
+Thumbs.db
+ehthumbs.db
