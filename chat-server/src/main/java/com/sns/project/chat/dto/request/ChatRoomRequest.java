@@ -1,9 +1,6 @@
 package com.sns.project.chat.dto.request;
 
 import java.util.List;
-import java.util.Set;
-
-import com.sns.project.domain.chat.ChatRoomType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

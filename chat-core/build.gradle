@@ -19,16 +19,35 @@ repositories {
 
 
 dependencies {
-
-    implementation 'org.springframework.boot:spring-boot-starter'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-
-	    // Lombok 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0' // JPA 어노테이션용
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+    // 유틸리티 라이브러리
+    implementation 'org.apache.commons:commons-lang3'
+    
+    // Lombok 의존성
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    
+    // 테스트 의존성
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
+	implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+
 }
+
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// jar 파일 빌드 설정
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
 }

@@ -1,11 +1,11 @@
 // MessageProducer.java
 package com.sns.project.chat.kafka.producer;
 
+import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-import com.sns.project.chat.kafka.dto.request.KafkaNewMsgRequest;
 
 
 @Service

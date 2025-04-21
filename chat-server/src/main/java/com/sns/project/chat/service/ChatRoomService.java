@@ -1,25 +1,24 @@
 package com.sns.project.chat.service;
 
+import com.sns.project.chat.dto.response.ChatRoomResponse;
 import com.sns.project.config.constants.RedisKeys;
-import com.sns.project.domain.chat.ChatParticipant;
-import com.sns.project.repository.chat.ChatParticipantRepository;
+import com.sns.project.core.domain.chat.ChatParticipant;
+import com.sns.project.core.repository.chat.ChatParticipantRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.sns.project.domain.chat.ChatRoom;
-import com.sns.project.domain.chat.ChatRoomType;
-import com.sns.project.repository.chat.ChatRoomRepository;
+import com.sns.project.core.domain.chat.ChatRoom;
+import com.sns.project.core.domain.chat.ChatRoomType;
+import com.sns.project.core.repository.chat.ChatRoomRepository;
 import com.sns.project.service.user.UserService;
-import com.sns.project.domain.user.User;
-import com.sns.project.chat.dto.response.ChatRoomResponse;
+import com.sns.project.core.domain.user.User;
 
 @Service
 @RequiredArgsConstructor

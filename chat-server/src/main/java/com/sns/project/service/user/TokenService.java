@@ -1,12 +1,10 @@
 package com.sns.project.service.user;
 
-import com.sns.project.handler.exceptionHandler.exception.unauthorized.UnauthorizedException;
+import com.sns.project.core.exception.unauthorized.UnauthorizedException;
 import com.sns.project.service.RedisService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Optional;
 

@@ -2,13 +2,13 @@ package com.sns.project.service.user;
 
 import com.sns.project.config.constants.AppConstants;
 import com.sns.project.config.constants.RedisKeys;
-import com.sns.project.domain.user.User;
-import com.sns.project.domain.user.UserFactory;
+import com.sns.project.core.domain.user.User;
+import com.sns.project.core.domain.user.UserFactory;
 import com.sns.project.controller.user.dto.request.RequestRegisterDto;
-import com.sns.project.handler.exceptionHandler.exception.notfound.NotFoundEmailException;
-import com.sns.project.handler.exceptionHandler.exception.notfound.NotFoundUserException;
-import com.sns.project.handler.exceptionHandler.exception.badRequest.RegisterFailedException;
-import com.sns.project.repository.UserRepository;
+import com.sns.project.core.exception.notfound.NotFoundEmailException;
+import com.sns.project.core.exception.notfound.NotFoundUserException;
+import com.sns.project.core.exception.badRequest.RegisterFailedException;
+import com.sns.project.core.repository.user.UserRepository;
 import com.sns.project.service.RedisService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,9 +27,9 @@ import java.util.Set;
 import java.util.UUID;
 import com.sns.project.worker.MailTask;
 import org.mindrot.jbcrypt.BCrypt;
-import com.sns.project.handler.exceptionHandler.exception.unauthorized.InvalidEmailTokenException;
+import com.sns.project.core.exception.unauthorized.InvalidEmailTokenException;
 import com.sns.project.config.JwtTokenProvider;
-import com.sns.project.handler.exceptionHandler.exception.unauthorized.InvalidPasswordException;
+import com.sns.project.core.exception.unauthorized.InvalidPasswordException;
 import org.webjars.NotFoundException;
 
 @Service
@@ -59,7 +59,12 @@ public class UserService {
     validateEmail(request.getEmail());
     validateUserId(request.getUserId());
     
-    User newUser = UserFactory.createUser(request);
+    User newUser = UserFactory.createUser(
+        request.getEmail(),
+        request.getUserId(),
+        request.getPassword(),
+        request.getName()
+    );
     newUser.setPassword(hashPassword(newUser.getPassword()));
     
     User registered = saveAndCache(newUser);

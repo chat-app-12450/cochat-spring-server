@@ -1,16 +1,12 @@
 package com.sns.project.chat.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sns.project.chat.kafka.dto.request.KafkaChatEnterRequest;
-import com.sns.project.chat.kafka.dto.request.KafkaNewMsgRequest;
 import com.sns.project.chat.dto.websocket.RoomScopedPayload;
 import com.sns.project.chat.kafka.producer.ChatEnterProducer;
 import com.sns.project.chat.kafka.producer.MessageProducer;
-import com.sns.project.chat.service.ChatPresenceService;
-import com.sns.project.chat.service.ChatRedisService;
-import com.sns.project.chat.service.ChatService;
-import com.sns.project.config.constants.RedisKeys.Chat;
 
+import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
+import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
@@ -31,10 +27,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final Map<Long, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private final ChatPresenceService chatPresenceService;
     private final MessageProducer messageProducer; // ✅ Kafka 프로듀서
-    private final ChatService chatService;
-    private final ChatRedisService chatRedisService;
+//    private final ChatRedisService chatRedisService;
     private final ChatEnterProducer chatEnterProducer;
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -47,7 +41,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         Long roomId = (Long) session.getAttributes().get("roomId");
 
         if (userId != null && roomId != null) {
-            chatPresenceService.userLeftRoom(roomId, userId);
             log.info("👋 User {} left room {}", userId, roomId);
             roomSessions.getOrDefault(roomId, new HashSet<>()).remove(session);
         }
@@ -61,6 +54,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if ("JOIN".equals(type)) {
             Long roomId = json.getLong("roomId");
             Long userId = (Long) session.getAttributes().get("userId");
+            log.info("{} 사용자가 채팅방에 입장", userId);
 
             session.getAttributes().put("roomId", roomId);
             roomSessions.putIfAbsent(roomId, ConcurrentHashMap.newKeySet());
@@ -79,6 +73,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Long senderId = (Long) session.getAttributes().get("userId");
             String clientMessageId = json.getString("clientMessageId");
 
+            log.info("{} 사용자 메시지 요청",clientMessageId);
             messageProducer.send(KafkaNewMsgRequest.builder()
                 .roomId(roomId)
                 .senderId(senderId)

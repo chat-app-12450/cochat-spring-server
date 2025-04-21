@@ -2,7 +2,7 @@ package com.sns.project.controller.noticiation.dto.response;
 
 import java.time.LocalDateTime;
 
-import com.sns.project.domain.notification.Notification;
+import com.sns.project.core.domain.notification.Notification;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

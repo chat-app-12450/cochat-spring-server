@@ -1,6 +1,5 @@
 package com.sns.project.chat.dto.websocket;
 
-import com.sns.project.chat.dto.websocket.RoomScopedPayload;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

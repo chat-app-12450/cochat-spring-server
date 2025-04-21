@@ -1,20 +1,15 @@
 package com.sns.project;
 
-import com.sns.project.domain.user.User;
+import com.sns.project.chat.service.ChatRoomService;
+import com.sns.project.core.domain.user.User;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.sns.project.controller.comment.dto.CommentRequestDto;
-import com.sns.project.controller.comment.dto.CommentResponseDto;
 import com.sns.project.controller.user.dto.request.RequestRegisterDto;
 import com.sns.project.service.NotificationService;
 import com.sns.project.service.RedisService;
-import com.sns.project.chat.service.ChatRoomService;
-import com.sns.project.chat.service.ChatService;
-import com.sns.project.service.comment.CommentService;
 import com.sns.project.service.following.FollowingService;
-import com.sns.project.service.post.PostService;
 import com.sns.project.service.user.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -30,22 +25,16 @@ public class DataLoader implements CommandLineRunner {
     private final UserService userService;
     private final RedisService redisService;
     private final NotificationService notificationService;
-    private final PostService postService;
-    private final CommentService commentService;
     private final FollowingService followingService;
     private final Random random = new Random();
     private final ChatRoomService chatRoomService;
-    private final ChatService chatService;
+
         @Override
         public void run(String... args) {
             int userCount = 10;
             initializeUsers(userCount);
             initializeUserTokens(userCount);
-//            saveNotifications();
-            savePosts(1L);
-            savePosts(2L);
-            savePosts(3L);
-            savePosts(4L);
+
             follow();
             saveChatRooms();
         }
@@ -94,36 +83,13 @@ public class DataLoader implements CommandLineRunner {
 //                notificationService.sendNotification("test notification" + i, senderId, receiverIds);
 //            }
 //        }
+
+
+
     
-        private void savePosts(Long userId) {
-            List<MultipartFile> images = new ArrayList<>();
-            createPosts(images, userId);
-        }
+
     
-        private void createPosts(List<MultipartFile> images, Long userId) {
-            for (int i = 0; i < 10; i++) {
-                Long postId = postService.createPost("title" + i, "content" + i, images, userId);
-                for(int j = 0; j < random.nextInt(5); j++) {
-                    createComments(postId);
-                }
-                // for(int j = 0; j < random.nextInt(5); j++) {
-                    // likePost(postId, userId);
-                // }
-            }
-        }
-    
-        private void createComments(Long postId) {
-            for (int i = 0; i < 5; i++) {
-                CommentResponseDto parent = commentService.createComment(new CommentRequestDto(postId, "content" + i), 1L);
-                createReplies(parent.getId());
-            }
-        }
-    
-        private void createReplies(Long parentId) {
-            for (int j = 0; j < 2; j++) {
-                commentService.createReply(parentId, "reply content" + j, 1L);
-            }
-        }
+
     
         /*
          * 1번 유저의 팔로잉 : 2, 3, 4,

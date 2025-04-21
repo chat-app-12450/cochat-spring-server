@@ -1,6 +1,6 @@
 package com.sns.project.controller.user.dto.response;
 
-import com.sns.project.domain.user.User;
+import com.sns.project.core.domain.user.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

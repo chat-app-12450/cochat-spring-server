@@ -3,7 +3,7 @@ package com.sns.project.controller.noticiation.dto.response;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.sns.project.domain.notification.Notification;
+import com.sns.project.core.domain.notification.Notification;
 
 import lombok.Getter;
 

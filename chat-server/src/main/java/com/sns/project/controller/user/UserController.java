@@ -5,7 +5,7 @@ import com.sns.project.controller.user.dto.request.LoginRequestDto;
 import com.sns.project.controller.user.dto.request.RequestPasswordResetDto;
 import com.sns.project.controller.user.dto.request.ResetPasswordDto;
 import com.sns.project.controller.user.dto.response.ResponseUserDto;
-import com.sns.project.domain.user.User;
+import com.sns.project.core.domain.user.User;
 import com.sns.project.handler.exceptionHandler.response.ApiResult;
 import com.sns.project.service.user.TokenService;
 import com.sns.project.service.user.UserService;

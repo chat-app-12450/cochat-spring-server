@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sns.project.aspect.AuthRequired;
 import com.sns.project.aspect.UserContext;
-import com.sns.project.domain.notification.Notification;
 import com.sns.project.controller.noticiation.dto.response.ResponseNotificationListDto;
+import com.sns.project.core.domain.notification.Notification;
 import com.sns.project.handler.exceptionHandler.response.ApiResult;
 import com.sns.project.service.NotificationService;
 

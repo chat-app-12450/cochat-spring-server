@@ -1,8 +1,8 @@
 package com.sns.project.chat.dto.response;
 
-import com.sns.project.domain.chat.ChatParticipant;
-import com.sns.project.domain.chat.ChatRoom;
-import com.sns.project.domain.chat.ChatRoomType;
+import com.sns.project.core.domain.chat.ChatParticipant;
+import com.sns.project.core.domain.chat.ChatRoom;
+import com.sns.project.core.domain.chat.ChatRoomType;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;

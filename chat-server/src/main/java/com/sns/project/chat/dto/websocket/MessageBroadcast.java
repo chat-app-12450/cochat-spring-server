@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import lombok.NoArgsConstructor;
-import com.sns.project.chat.dto.websocket.RoomScopedPayload;
+
 @Getter
 @Builder
 @AllArgsConstructor

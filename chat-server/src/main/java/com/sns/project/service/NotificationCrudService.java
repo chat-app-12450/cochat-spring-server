@@ -1,7 +1,7 @@
 package com.sns.project.service;
 
-import com.sns.project.domain.notification.NotificationContent;
-import com.sns.project.repository.notification.NotificationContentRepository;
+import com.sns.project.core.domain.notification.NotificationContent;
+import com.sns.project.core.repository.notification.NotificationContentRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

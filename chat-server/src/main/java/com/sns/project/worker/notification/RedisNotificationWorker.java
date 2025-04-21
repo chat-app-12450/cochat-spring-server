@@ -6,12 +6,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.sns.project.domain.notification.NotificationContent;
-import com.sns.project.domain.notification.Notification;
-import com.sns.project.domain.user.User;
+import com.sns.project.core.domain.notification.NotificationContent;
+import com.sns.project.core.domain.notification.Notification;
+import com.sns.project.core.domain.user.User;
 import com.sns.project.controller.noticiation.dto.response.ResponseNotificationDto;
 import com.sns.project.controller.noticiation.dto.workerDto.BatchProcessedNotificationDto;
-import com.sns.project.repository.notification.NotificationRepository;
+import com.sns.project.core.repository.notification.NotificationRepository;
 import com.sns.project.service.RedisService;
 
 import lombok.RequiredArgsConstructor;

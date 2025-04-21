@@ -1,12 +1,12 @@
 package com.sns.project.service;
 
-import com.sns.project.domain.notification.Notification;
-import com.sns.project.domain.notification.NotificationContent;
-import com.sns.project.domain.user.User;
+import com.sns.project.core.domain.notification.Notification;
+import com.sns.project.core.domain.notification.NotificationContent;
+import com.sns.project.core.domain.user.User;
 import com.sns.project.controller.noticiation.dto.workerDto.RawNotificationDto;
-import com.sns.project.handler.exceptionHandler.exception.notfound.NotFoundNotificationException;
-import com.sns.project.repository.notification.NotificationContentRepository;
-import com.sns.project.repository.notification.NotificationRepository;
+import com.sns.project.core.exception.notfound.NotFoundNotificationException;
+import com.sns.project.core.repository.notification.NotificationContentRepository;
+import com.sns.project.core.repository.notification.NotificationRepository;
 import com.sns.project.service.user.UserService;
 import com.sns.project.worker.notification.NotificationSplitWorker;
 
