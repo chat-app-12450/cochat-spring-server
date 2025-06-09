@@ -1,4 +1,4 @@
-package com.sns.project.chat.dto.request;
+package com.sns.project.chat.controller.dto.request;
 
 import java.util.List;
 
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ChatRoomRequest {
+public class RoomCreationRequest {
     private String name;
     private List<Long> userIds;
 }

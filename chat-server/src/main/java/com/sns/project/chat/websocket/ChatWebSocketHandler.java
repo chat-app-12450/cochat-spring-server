@@ -1,35 +1,34 @@
-package com.sns.project.chat.handler;
+package com.sns.project.chat.websocket;
+
+import com.sns.project.chat.websocket.dto.RoomScopedPayload;
+import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
+import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
+import java.io.IOException;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.json.JSONObject;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sns.project.chat.dto.websocket.RoomScopedPayload;
 import com.sns.project.chat.kafka.producer.ChatEnterProducer;
 import com.sns.project.chat.kafka.producer.MessageProducer;
 
-import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
-import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.json.JSONObject;
-import org.springframework.stereotype.Component;
-import org.springframework.web.socket.*;
-
-import org.springframework.web.socket.handler.TextWebSocketHandler;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
+@RequiredArgsConstructor
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
-    private final Map<Long, Set<WebSocketSession>> roomSessions = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private final MessageProducer messageProducer; // ✅ Kafka 프로듀서
-//    private final ChatRedisService chatRedisService;
+    private final RoomSessionManager roomSessionManager;
+    private final ObjectMapper objectMapper;
+    private final MessageProducer messageProducer;
     private final ChatEnterProducer chatEnterProducer;
+
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("✅ WebSocket connected: {}", session.getId());
@@ -37,12 +36,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        Long userId = (Long) session.getAttributes().get("userId");
         Long roomId = (Long) session.getAttributes().get("roomId");
-
-        if (userId != null && roomId != null) {
-            log.info("👋 User {} left room {}", userId, roomId);
-            roomSessions.getOrDefault(roomId, new HashSet<>()).remove(session);
+        if (roomId != null) {
+            roomSessionManager.removeSession(roomId, session);
         }
     }
 
@@ -50,22 +46,17 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         JSONObject json = new JSONObject(message.getPayload());
         String type = json.getString("type");
-        log.info("json: {}", json);
+        
         if ("JOIN".equals(type)) {
             Long roomId = json.getLong("roomId");
             Long userId = (Long) session.getAttributes().get("userId");
-            log.info("{} 사용자가 채팅방에 입장", userId);
-
             session.getAttributes().put("roomId", roomId);
-            roomSessions.putIfAbsent(roomId, ConcurrentHashMap.newKeySet());
-            roomSessions.get(roomId).add(session);
+            roomSessionManager.addSession(roomId, session);
 
             chatEnterProducer.send(KafkaChatEnterRequest.builder()
                 .roomId(roomId)
                 .userId(userId)
                 .build());
-
-
 
         } else if ("MESSAGE".equals(type)) {
             Long roomId = json.getLong("roomId");
@@ -73,7 +64,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Long senderId = (Long) session.getAttributes().get("userId");
             String clientMessageId = json.getString("clientMessageId");
 
-            log.info("{} 사용자 메시지 요청",clientMessageId);
             messageProducer.send(KafkaNewMsgRequest.builder()
                 .roomId(roomId)
                 .senderId(senderId)
@@ -86,11 +76,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     public void broadcastToRoom(RoomScopedPayload payload) throws IOException {
         Long roomId = payload.getRoomId();
-        log.info("🍉 broadcast to room : {}", roomId);
-        log.info("type: {}", payload.getType());
-        Set<WebSocketSession> sessions = roomSessions.get(roomId);
-        log.info("session : {}", sessions);
+        Set<WebSocketSession> sessions = roomSessionManager.getSessions(roomId);
+
         if (sessions == null || sessions.isEmpty()) return;
+
         String jsonMessage = objectMapper.writeValueAsString(payload);
 
         for (WebSocketSession session : sessions) {
@@ -98,6 +87,5 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
                 session.sendMessage(new TextMessage(jsonMessage));
             }
         }
-        log.info("📩 Message sent to room {}: {}", roomId, payload);
     }
 }

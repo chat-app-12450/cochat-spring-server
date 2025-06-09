@@ -34,11 +34,11 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
       if (cookies != null) {
         for (Cookie cookie : cookies) {
-          if ("token".equals(cookie.getName())) {
+          if ("Authorization".equals(cookie.getName())) {
             String token = cookie.getValue();
             log.info("📦 WebSocket token from cookie: {}", token);
 
-            Long userId = verifyToken(token);
+            Long userId = tokenService.validateToken(token);
             if (userId != null) {
               attributes.put("userId", userId); // WebSocketSession에 전달됨
               return true; // 핸드셰이크 승인
@@ -61,7 +61,5 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
     // 필요하면 로깅 가능
   }
 
-  private Long verifyToken(String token) {
-    return tokenService.validateToken(token); // 유효하면 userId 리턴
-  }
+ 
 }

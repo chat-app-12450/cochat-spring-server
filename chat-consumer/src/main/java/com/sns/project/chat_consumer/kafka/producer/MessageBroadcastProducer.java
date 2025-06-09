@@ -1,19 +1,22 @@
 package com.sns.project.chat_consumer.kafka.producer;
 
-import com.sns.project.chat_consumer.kafka.dto.request.KafkaChatEnterDeliverRequest;
+
+import com.sns.project.core.kafka.dto.request.KafkaMsgBroadcastRequest;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 
 import lombok.RequiredArgsConstructor;
 
-@Service
 @RequiredArgsConstructor
-public class ChatEnterDeliverProducer {
+@Service
+public class MessageBroadcastProducer {
 
   private final KafkaTemplate<String, Object> kafkaTemplate;
 
-  public void deliver(KafkaChatEnterDeliverRequest request) {
-    kafkaTemplate.send("chat-enter-deliver", request);
+
+
+  public void sendDeliver(KafkaMsgBroadcastRequest event) {
+    kafkaTemplate.send("message.broadcast", event.getRoomId().toString(), event);
   }
 }

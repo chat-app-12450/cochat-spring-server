@@ -13,6 +13,6 @@ public class ChatEnterProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void send(KafkaChatEnterRequest request){
-        kafkaTemplate.send("chat-enter", request.getRoomId().toString(), request);
+        kafkaTemplate.send("chat.enter", request.getRoomId().toString(), request);
     }
 }

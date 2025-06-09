@@ -2,9 +2,9 @@ package com.sns.project.chat.controller;
 
 import com.sns.project.aspect.AuthRequired;
 import com.sns.project.aspect.UserContext;
-import com.sns.project.chat.dto.request.ChatRoomRequest;
-import com.sns.project.chat.dto.response.AllChatRoomResponse;
-import com.sns.project.chat.dto.response.ChatRoomResponse;
+import com.sns.project.chat.controller.dto.request.RoomCreationRequest;
+import com.sns.project.chat.controller.dto.response.RoomListResponse;
+import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
 import com.sns.project.core.domain.user.User;
 import com.sns.project.handler.exceptionHandler.response.ApiResult;
 import com.sns.project.chat.service.ChatRoomService;
@@ -26,24 +26,24 @@ public class ChatRoomController {
 
     @PostMapping("/room")
     @AuthRequired
-    public ApiResult<ChatRoomResponse> createRoom(@RequestBody ChatRoomRequest chatRoomRequest) {
+    public ApiResult<RoomInfoResponse> createRoom(@RequestBody RoomCreationRequest roomCreationRequest) {
         Long userId = UserContext.getUserId();
         User creator = userService.getUserById(userId);
 
         return ApiResult.success(chatRoomService.createRoom(
-            chatRoomRequest.getName(),
-            chatRoomRequest.getUserIds(),
+            roomCreationRequest.getName(),
+            roomCreationRequest.getUserIds(),
             creator
         ));
     }
 
     @GetMapping("/rooms")
     @AuthRequired
-    public ApiResult<AllChatRoomResponse> getUserChatRooms() {
+    public ApiResult<RoomListResponse> getUserChatRooms() {
         Long userId = UserContext.getUserId();
         User user = userService.getUserById(userId);
 
-        return ApiResult.success(new AllChatRoomResponse(chatRoomService.getUserChatRooms(user)));
+        return ApiResult.success(new RoomListResponse(chatRoomService.getUserChatRooms(user)));
     }
 
 

@@ -45,8 +45,8 @@ public class UserService {
   private SpringTemplateEngine templateEngine;
   @Value("${app.domain.url}")
   private String domainUrl;
-  private final JwtTokenProvider jwtTokenProvider;
-  
+  private final TokenService tokenService;
+
   // 비밀번호 재설정 링크 생성
   private String getBody(String resetPasswordLink) {
       Context context = new Context();
@@ -185,15 +185,10 @@ public class UserService {
         throw new InvalidPasswordException();
     }
 
-    return saveAuthToken(user.getId());
+    return tokenService.generateToken(user.getId());
   }
 
-  public String saveAuthToken(Long id) {
-    String token = jwtTokenProvider.generateToken(String.valueOf(id));
-    int cacheDuration = AppConstants.Auth.CACHE_DURATION_MINUTES;
-    redisService.setValueWithExpiration(token, String.valueOf(id), cacheDuration * 60);
-    return token;
-  }
+
 
   public User getUserById(Long id) {
     return userRepository.findById(id)

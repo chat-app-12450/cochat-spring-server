@@ -1,5 +1,6 @@
 package com.sns.project.config;
 
+import com.sns.project.chat.websocket.ChatWebSocketHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
@@ -7,7 +8,6 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 
 import lombok.RequiredArgsConstructor;
 
-import com.sns.project.chat.handler.ChatWebSocketHandler;
 import com.sns.project.chat.interceptor.AuthHandshakeInterceptor;
 
 @Configuration

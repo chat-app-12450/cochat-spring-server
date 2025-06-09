@@ -1,19 +1,22 @@
-package com.sns.project.chat.dto.websocket;
+package com.sns.project.chat.websocket.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+
 import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReadBroadcast implements RoomScopedPayload {
-    private final String type = "READ";
-    private Long roomId;
+public class MessageBroadcast implements RoomScopedPayload {
+    private final String type = "MESSAGE";
     private Long messageId;
-    private int unreadCount;
+    private Long roomId;
+    private Long senderId;
+    private String content;
+    private Long receivedAt;
 
     @Override
     public Long getRoomId() {

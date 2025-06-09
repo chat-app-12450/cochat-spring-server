@@ -1,4 +1,4 @@
-package com.sns.project.chat_consumer.kafka;
+package com.sns.project.chat_consumer.kafka.config;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -29,8 +29,8 @@ public class KafkaProducerConfig {
         
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        // Object를 JSON으로 직렬화하기 위해 JsonSerializer 사용
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
         
         return new DefaultKafkaProducerFactory<>(props);
     }

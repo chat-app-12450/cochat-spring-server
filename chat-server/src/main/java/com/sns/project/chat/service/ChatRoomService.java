@@ -1,6 +1,6 @@
 package com.sns.project.chat.service;
 
-import com.sns.project.chat.dto.response.ChatRoomResponse;
+import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
 import com.sns.project.config.constants.RedisKeys;
 import com.sns.project.core.domain.chat.ChatParticipant;
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
@@ -29,7 +29,7 @@ public class ChatRoomService {
     private final UserService userService;
     private final ChatRedisService stringRedisService;
     @Transactional
-    public ChatRoomResponse createRoom(String name, List<Long> participantIds, User creator) {
+    public RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator) {
         if (participantIds.size() == 0) {
             throw new IllegalArgumentException("최소 두명의 참여자가 있어야합니다.");
         }
@@ -57,15 +57,15 @@ public class ChatRoomService {
         }
 
         
-        return new ChatRoomResponse(chatRoom, chatParticipants);
+        return new RoomInfoResponse(chatRoom, chatParticipants);
     }
 
     @Transactional(readOnly = true)
-    public List<ChatRoomResponse> getUserChatRooms(User user) {
+    public List<RoomInfoResponse> getUserChatRooms(User user) {
         List<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsWithParticipantsByUserId(user.getId());
 
         return chatRooms.stream()
-            .map(chatRoom -> new ChatRoomResponse(
+            .map(chatRoom -> new RoomInfoResponse(
                 chatRoom,
                 chatRoom.getParticipants()))
             .collect(Collectors.toList());

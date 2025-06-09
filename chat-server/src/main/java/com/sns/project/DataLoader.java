@@ -33,7 +33,6 @@ public class DataLoader implements CommandLineRunner {
         public void run(String... args) {
             int userCount = 10;
             initializeUsers(userCount);
-            initializeUserTokens(userCount);
 
             follow();
             saveChatRooms();
@@ -45,17 +44,6 @@ public class DataLoader implements CommandLineRunner {
                 emails.add(i+"@gmail.com");
             }
             emails.forEach(this::saveUser);
-        }
-    
-        private void initializeUserTokens(int userCount) {
-
-            for (long i = 1; i <= userCount; i++) {
-                saveUserToken(i, "testToken"+i);
-            }
-        }
-    
-        private void saveUserToken(Long userId, String token) {
-            redisService.setValueWithExpiration(token, String.valueOf(userId), 10000 * 60);
         }
     
         private void saveUser(String email) {
@@ -76,13 +64,7 @@ public class DataLoader implements CommandLineRunner {
             return email.split("@")[0] + "_id";
         }
     
-//        private void saveNotifications() {
-//            Long senderId = 3L;
-//            List<Long> receiverIds = List.of(1L, 2L);
-//            for (int i = 0; i < 3; i++) {
-//                notificationService.sendNotification("test notification" + i, senderId, receiverIds);
-//            }
-//        }
+
 
 
 

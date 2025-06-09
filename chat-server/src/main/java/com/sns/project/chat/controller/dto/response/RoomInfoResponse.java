@@ -1,4 +1,4 @@
-package com.sns.project.chat.dto.response;
+package com.sns.project.chat.controller.dto.response;
 
 import com.sns.project.core.domain.chat.ChatParticipant;
 import com.sns.project.core.domain.chat.ChatRoom;
@@ -8,13 +8,13 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 
 @Getter
-public class ChatRoomResponse {
+public class RoomInfoResponse {
     private Long id;
     private String name;
     private ChatRoomType type;
     private List<ParticipantResponse> participants;
 
-    public ChatRoomResponse(ChatRoom chatRoom, List<ChatParticipant> participants) {
+    public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants) {
         this.id = chatRoom.getId();
         this.name = chatRoom.getName();
         this.type = chatRoom.getChatRoomType();

@@ -50,7 +50,7 @@ public class UserController {
   @PostMapping("/login")
   public ApiResult<String> login(@RequestBody LoginRequestDto request, HttpServletResponse response) {
     String token = userService.authenticate(request.getUserId(), request.getPassword());
-    Cookie cookie = new Cookie("token", token);
+    Cookie cookie = new Cookie("Authorization", token);
     cookie.setPath("/");
     cookie.setHttpOnly(false);
     cookie.setSecure(false);
@@ -103,7 +103,7 @@ public ApiResult<ResponseUserDto> validateToken(HttpServletRequest request) {
     
     if (cookies != null) {
       for (Cookie cookie : cookies) {
-        if ("token".equals(cookie.getName())) {
+        if ("Authorization".equals(cookie.getName())) {
           token = cookie.getValue();
           break;
         }

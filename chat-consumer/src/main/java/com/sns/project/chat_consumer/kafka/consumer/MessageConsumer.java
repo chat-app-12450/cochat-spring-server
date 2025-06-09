@@ -4,13 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
-import com.sns.project.chat_consumer.kafka.dto.request.KafkaDeliverMessage;
-import com.sns.project.chat_consumer.kafka.producer.MessageDeliverProducer;
+import com.sns.project.chat_consumer.kafka.processor.MessageProcessor;
+import com.sns.project.chat_consumer.kafka.producer.MessageBroadcastProducer;
 import com.sns.project.chat_consumer.service.ChatRedisService;
 import com.sns.project.chat_consumer.service.ChatService;
 import com.sns.project.chat_consumer.service.UnreadCountService;
-import com.sns.project.chat_consumer.service.dto.UnreadCountAndReadUsers;
-import com.sns.project.core.constants.RedisKeys;
+import com.sns.project.core.kafka.dto.request.KafkaMsgBroadcastRequest;
 import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,48 +26,18 @@ public class MessageConsumer {
     private final ObjectMapper objectMapper;
     private final UnreadCountService unreadCountService;
     private final ChatService chatService;
-    private final MessageDeliverProducer messageDeliverProducer;
+    private final MessageBroadcastProducer messageBroadcastProducer;
+    private final MessageProcessor messageProcessor;
 
     @KafkaListener(
         topics = "message.received",
-        groupId = "chat-received-group",
+        groupId = "message-received-group",
         containerFactory = "kafkaListenerContainerFactory")
     public void consume(String json, Acknowledgment ack) throws JsonProcessingException {
-
         KafkaNewMsgRequest message = objectMapper.readValue(json, KafkaNewMsgRequest.class);
-        Long roomId = message.getRoomId();
-        String clientMessageId = message.getClientMessageId();
-        Long receivedAt = message.getReceivedAt();
-        String content = message.getContent();
-        Long senderId = message.getSenderId();
-        log.info("📥 Kafka 수신 메시지: roomId={}, messageId={}", roomId, clientMessageId);
-
-        // 1. 메시지 저장 (DB)
-        Long messageId = chatService.saveMessage(roomId, senderId, content, clientMessageId);
-
-        // 2. 메시지 캐시 (Redis)
-        String messageZSetKey = RedisKeys.Chat.CHAT_MESSAGES_KEY.getMessagesKey(roomId);
-        chatRedisService.addToZSet(messageZSetKey, messageId.toString(), receivedAt);
-
-        // 3. unread 계산
-        UnreadCountAndReadUsers result = unreadCountService.handleUnreadCalculation(
-            message.getRoomId(),
-            messageId,
-            message.getSenderId()
-        );
-
-        // 4. broadcast & persist
-        KafkaDeliverMessage deliverMessage = KafkaDeliverMessage.builder()
-            .messageId(messageId)
-            .roomId(roomId)
-            .senderId(senderId)
-            .content(content)
-            .receivedAt(receivedAt)
-            .unreadCount(result.getUnreadCount())
-            .readUsers(result.getReadUsers())
-            .build();
-        messageDeliverProducer.sendDeliver(deliverMessage);
-
+        log.info("🎯 카프카 메시지 수신: 사용자 {}이 방 {}에 메시지 전송(내용: {})", message.getSenderId(), message.getRoomId(), message.getContent());
+        KafkaMsgBroadcastRequest broadcastRequest = messageProcessor.process(message);
+        messageBroadcastProducer.sendDeliver(broadcastRequest);
         ack.acknowledge();
     }
 }

@@ -1,4 +1,4 @@
-package com.sns.project.chat.dto.websocket;
+package com.sns.project.chat.websocket.dto;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
     @JsonSubTypes.Type(value = MessageBroadcast.class, name = "MESSAGE"),
     @JsonSubTypes.Type(value = JoinBroadcast.class, name = "JOIN"),
-    @JsonSubTypes.Type(value = ReadBroadcast.class, name = "READ")
 })
 public interface WebsocketPayload {
     String getType();
