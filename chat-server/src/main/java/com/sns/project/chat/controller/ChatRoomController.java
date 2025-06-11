@@ -4,6 +4,7 @@ import com.sns.project.aspect.AuthRequired;
 import com.sns.project.aspect.UserContext;
 import com.sns.project.chat.controller.dto.request.RoomCreationRequest;
 import com.sns.project.chat.controller.dto.response.RoomListResponse;
+import com.sns.project.chat.controller.dto.response.ChatHistoryResponse;
 import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
 import com.sns.project.core.domain.user.User;
 import com.sns.project.handler.exceptionHandler.response.ApiResult;
@@ -11,6 +12,8 @@ import com.sns.project.chat.service.ChatRoomService;
 import com.sns.project.service.user.UserService;
 
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
@@ -46,7 +49,13 @@ public class ChatRoomController {
         return ApiResult.success(new RoomListResponse(chatRoomService.getUserChatRooms(user)));
     }
 
-
+    @GetMapping("/history")
+//    @AuthRequired
+    public ApiResult<List<ChatHistoryResponse>> getChatHistory(
+        @RequestParam(name = "room_id") Long roomId) {
+        System.out.println("🤔 채팅내역");
+        return ApiResult.success(chatRoomService.getChatHistory(roomId));
+    }
 
 
     

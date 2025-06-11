@@ -42,7 +42,7 @@ public class AuthAspect {
         if (request.getCookies() == null) return null;
 
         for (Cookie cookie : request.getCookies()) {
-            if ("token".equals(cookie.getName())) {
+            if ("Authorization".equals(cookie.getName())) {
                 return cookie.getValue();
             }
         }

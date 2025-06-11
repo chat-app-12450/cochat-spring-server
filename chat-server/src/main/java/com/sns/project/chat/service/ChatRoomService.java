@@ -1,8 +1,11 @@
 package com.sns.project.chat.service;
 
+import com.sns.project.chat.controller.dto.response.ChatHistoryResponse;
 import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
 import com.sns.project.config.constants.RedisKeys;
+import com.sns.project.core.domain.chat.ChatMessage;
 import com.sns.project.core.domain.chat.ChatParticipant;
+import com.sns.project.core.repository.chat.ChatMessageRepository;
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -27,7 +30,8 @@ public class ChatRoomService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final UserService userService;
-    private final ChatRedisService stringRedisService;
+    private final ChatMessageRepository chatMessageRepository;
+
     @Transactional
     public RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator) {
         if (participantIds.size() == 0) {
@@ -43,7 +47,6 @@ public class ChatRoomService {
         chatRoomRepository.save(chatRoom);
 
 
-        String roomUsersKey = RedisKeys.Chat.CHAT_ROOM_PARTICIPANTS_SET_KEY.getParticipants(chatRoom.getId());
         Set<Long> uniqueParticipantIds = new HashSet<>(participantIds);
         uniqueParticipantIds.add(creator.getId());
         List<User> participants = userService.getUsersByIds(uniqueParticipantIds);
@@ -52,8 +55,6 @@ public class ChatRoomService {
             // 채팅방 참여자 목록 데이터베이스 저장
             ChatParticipant chatParticipant = new ChatParticipant(chatRoom, participant);
             chatParticipants.add(chatParticipantRepository.save(chatParticipant));
-            // 채팅방 참여자 목록 캐시 업데이트
-            stringRedisService.addToSet(roomUsersKey, participant.getId().toString());
         }
 
         
@@ -73,6 +74,13 @@ public class ChatRoomService {
 
     public ChatRoom getChatRoomById(Long roomId) {
         return chatRoomRepository.findById(roomId).orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+    }
+
+    public List<ChatHistoryResponse> getChatHistory(Long roomId) {
+        List<ChatMessage> chatMessages = chatMessageRepository.findByChatRoomId(roomId);
+        return chatMessages.stream()
+            .map(chatMessage -> new ChatHistoryResponse(chatMessage.getId(), chatMessage.getMessage(), chatMessage.getSender().getId(), chatMessage.getReceivedAt()))
+            .collect(Collectors.toList());
     }
 
 

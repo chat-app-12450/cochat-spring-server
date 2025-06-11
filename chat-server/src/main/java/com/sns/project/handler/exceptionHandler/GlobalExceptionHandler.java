@@ -27,12 +27,15 @@ public class GlobalExceptionHandler {
   private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
   private ResponseEntity<ApiResult<?>> newResponse(Throwable throwable, HttpStatus httpStatus) {
+    // logger.error("Exception occurred - Type: {}, Message: {}, Status: {}", 
+    //     throwable.getClass().getSimpleName(), 
+    //     throwable.getMessage(), 
+    //     httpStatus)
+
     logger.error("Exception occurred - Type: {}, Message: {}, Status: {}", 
         throwable.getClass().getSimpleName(), 
-        throwable.getMessage(), 
+        throwable.getMessage().substring(0, 100), 
         httpStatus);
-
-//    throwable.printStackTrace();
 
     HttpHeaders headers = new HttpHeaders();
     headers.add("Content-Type", "application/json");

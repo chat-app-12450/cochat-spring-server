@@ -20,7 +20,6 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class TokenService {
 
-    private final RedisService redisService;
     private final String secretKey = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfgh";
 
     public Long validateToken(String token) {

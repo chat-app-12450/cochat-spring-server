@@ -28,7 +28,6 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final MessageProducer messageProducer;
     private final ChatEnterProducer chatEnterProducer;
-
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("✅ WebSocket connected: {}", session.getId());
@@ -64,13 +63,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Long senderId = (Long) session.getAttributes().get("userId");
             String clientMessageId = json.getString("clientMessageId");
 
-            messageProducer.send(KafkaNewMsgRequest.builder()
+            KafkaNewMsgRequest kafkaNewMsgRequest = KafkaNewMsgRequest.builder()
                 .roomId(roomId)
                 .senderId(senderId)
                 .content(msg)
                 .clientMessageId(clientMessageId)
                 .receivedAt(System.currentTimeMillis())
-                .build());
+                .build();
+
+            messageProducer.send(kafkaNewMsgRequest);
         }
     }
 
