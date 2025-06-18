@@ -1,4 +1,4 @@
-package com.sns.project.chat_consumer.kafka.processor;
+package com.sns.project.chat_consumer.kafka.consumer.processor;
 
 import com.sns.project.chat_consumer.service.ChatRedisService;
 import com.sns.project.chat_consumer.service.ChatService;

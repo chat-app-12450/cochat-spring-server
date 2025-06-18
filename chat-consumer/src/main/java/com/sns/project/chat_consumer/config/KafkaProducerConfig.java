@@ -1,4 +1,4 @@
-package com.sns.project.chat_consumer.kafka.config;
+package com.sns.project.chat_consumer.config;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
