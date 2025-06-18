@@ -4,6 +4,7 @@ import com.sns.project.core.exception.unauthorized.UnauthorizedException;
 import com.sns.project.service.RedisService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -12,7 +13,11 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import java.nio.charset.StandardCharsets;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Encoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+
 import java.security.Key;
 import java.util.Date;
 
@@ -20,7 +25,16 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class TokenService {
 
-    private final String secretKey = "QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfgh";
+    @Value("${jwt.secret}")
+    private  String secretKey;
+
+    @PostConstruct
+    public void init() {
+        System.out.println("secretKey = " + secretKey);
+        Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+        String base64Key = Encoders.BASE64.encode(key.getEncoded());
+        System.out.println(base64Key);
+    }
 
     public Long validateToken(String token) {
         try {

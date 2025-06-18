@@ -3,6 +3,8 @@ package com.sns.project.chat.kafka.producer;
 
 import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import lombok.RequiredArgsConstructor;
+
+import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,9 +15,9 @@ import org.springframework.stereotype.Service;
 public class MessageProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private static final String TOPIC = "message.received";
+    private final NewTopic messageReceivedTopic;
 
     public void send(KafkaNewMsgRequest message) {
-        kafkaTemplate.send(TOPIC, message.getRoomId().toString(), message);
+        kafkaTemplate.send(messageReceivedTopic.name(), message.getRoomId().toString(), message);
     }
 }

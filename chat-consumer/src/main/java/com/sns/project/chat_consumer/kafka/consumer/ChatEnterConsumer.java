@@ -1,6 +1,5 @@
 package com.sns.project.chat_consumer.kafka.consumer;
 
-import com.sns.project.chat_consumer.kafka.processor.ChatEnterProcessor;
 import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
@@ -17,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ChatEnterConsumer {
 
     private final ObjectMapper objectMapper;
-    private final ChatEnterProcessor chatEnterProcessor;
 
     @KafkaListener(
         topics = "chat.enter",

@@ -6,6 +6,8 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
+
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
@@ -13,18 +15,29 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 @Configuration
 public class OpenSearchConfig {
 
+    @Value("${opensearch.host}")
+    private String host;
+
+    @Value("${opensearch.port}")
+    private int port;
+
+    @Value("${opensearch.username}")
+    private String username;
+
+    @Value("${opensearch.password}")
+    private String password;
+
+    @Value("${opensearch.scheme}")
+    private String scheme;
+    
+
     @Bean
     public RestHighLevelClient openSearchClient() {
-        final String host = "localhost"; // 환경변수로 대체 가능
-        final int port = 9200;
-        final String username = "admin";
-        final String password = "Developer@123";
-
         final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
         credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username, password));
 
         RestClientBuilder builder = RestClient.builder(
-                new org.apache.http.HttpHost(host, port, "https"))
+                new org.apache.http.HttpHost(host, port, scheme))
             .setHttpClientConfigCallback(httpClientBuilder -> {
                 try {
                     // 모든 인증서 신뢰 (테스트용)

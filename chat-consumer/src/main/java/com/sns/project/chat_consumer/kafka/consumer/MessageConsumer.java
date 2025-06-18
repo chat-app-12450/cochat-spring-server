@@ -2,8 +2,8 @@ package com.sns.project.chat_consumer.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sns.project.chat_consumer.kafka.dto.request.KafkaVectorMsgRequest;
-import com.sns.project.chat_consumer.kafka.processor.MessageProcessor;
+import com.sns.project.chat_consumer.dto.request.KafkaVectorMsgRequest;
+import com.sns.project.chat_consumer.kafka.consumer.processor.MessageProcessor;
 import com.sns.project.chat_consumer.kafka.producer.MessageBroadcastProducer;
 import com.sns.project.chat_consumer.kafka.producer.MessageVectorProducer;
 import com.sns.project.core.kafka.dto.request.KafkaMsgBroadcastRequest;

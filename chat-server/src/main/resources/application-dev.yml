@@ -1,13 +1,14 @@
 spring:
+  frontend:
+    url: http://localhost:3001
   data:
     mongodb:
       uri: mongodb://localhost:27017/chatbot
 
   kafka:
-    bootstrap-servers:
-      - localhost:29092
-#      - localhost:9093
-#      - localhost:9094
+    bootstrap-servers: localhost:29092
+    #      - localhost:9093
+    #      - localhost:9094
 
 
     listener:
@@ -71,7 +72,8 @@ app:
 
 jwt:
   expiration: 86400000  # 24시간
-  secret: ${JWT_SECRET:c2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQtc2lsdmVybmluZS10ZWNoLXNwcmluZy1ib290LWp3dC10dXRvcmlhbC1zZWNyZXQK}
+  secret: T+FITVBc8qEi9tZ/TgN7mfZ9wb0BqArbh4B+RMZ9zKU=
+
 
 springdoc:
   api-docs:

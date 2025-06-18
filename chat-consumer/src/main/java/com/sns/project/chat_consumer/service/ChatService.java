@@ -33,48 +33,16 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
     private final ChatParticipantRepository chatParticipantRepository;
-    private final RedisLuaService redisLuaService;
     private final ChatReadStatusRepository chatReadStatusRepository;
     private final ChatRedisService chatRedisService;
 
-    /*
-     * 유저의 읽음 처리 상태를 저장합니다.
-     */
-    @Transactional
-    public void saveOrUpdateReadStatus(Long userId, Long roomId, Long messageId) {
-        if(messageId == null){
-            return;
-        }
-        User user = getUserById(userId);
-        ChatRoom room = chatRoomRepository.findById(roomId)
-            .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
-        
-        chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId)
-            .ifPresentOrElse(
-                (status) -> {
-                    chatReadStatusRepository.updateIfLastReadIdIsSmaller(userId, roomId, messageId);
-                },
-                () -> {
-                    ChatReadStatus newStatus = new ChatReadStatus(user, room, messageId);
-                    chatReadStatusRepository.save(newStatus);
-                }
-            );
-    
-    }
-    
+
+
     private User getUserById(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundUserException("User ID(" + userId + ") not found"));
     }
 
-    public LastReadIdInfo readAllMessages(Long userId, Long roomId) {
-        log.info("모든 메시지들 일음 처리~~~~~");
-        String lastReadKey = RedisKeys.Chat.CHAT_LAST_READ_MESSAGE_ID.getLastReadMessageKey(userId, roomId);
-        String messageZSetKey = RedisKeys.Chat.CHAT_MESSAGES_KEY.getMessagesKey(roomId);
-        String unreadCountKey = RedisKeys.Chat.CHAT_UNREAD_COUNT_HASH_KEY.getUnreadCountKey();
-
-        return redisLuaService.processUnreadMessages(lastReadKey, messageZSetKey, unreadCountKey);
-    }
 
 
 
@@ -99,44 +67,7 @@ public class ChatService {
     }
 
 
-    /*
-     * 메시지별 안읽은 수를 조회합니다.
-     */
-    public int getUnreadCount(Long roomId, Long messageId) {
-        String unreadCountKey = RedisKeys.Chat.CHAT_UNREAD_COUNT_HASH_KEY.getUnreadCountKey();
-        return chatRedisService.getHashValue(unreadCountKey, messageId.toString())
-            .map(Integer::parseInt)
-            .orElse(calculateUnreadCount(roomId, messageId));
-    }
 
-    public int calculateUnreadCount(Long roomId, Long messageId) {
-        String participantKey = RedisKeys.Chat.CHAT_ROOM_PARTICIPANTS_SET_KEY.getParticipants(roomId);
-        Set<Long> participantIds = chatRedisService.getSetMembers(participantKey).stream()
-            .map(Long::parseLong)
-            .collect(Collectors.toSet());
-    
-        String messageZSetKey = RedisKeys.Chat.CHAT_MESSAGES_KEY.getMessagesKey(roomId);
-        Long messageRank = chatRedisService.getRank(messageZSetKey, messageId.toString())
-            .orElseThrow(() -> new RuntimeException("messageId " + messageId + "가 존재하지 않습니다"));
-    
-        int unreadCount = 0;
-    
-        for (Long participantId : participantIds) {
-            String lastReadKey = RedisKeys.Chat.CHAT_LAST_READ_MESSAGE_ID.getLastReadMessageKey(participantId, roomId);
-            Long lastReadMessageId = chatRedisService.getValue(lastReadKey)
-                .map(Long::parseLong)
-                .orElse(-1L); // 아무것도 안 읽었으면 -1로 간주
-    
-            Long lastReadRank = chatRedisService.getRank(messageZSetKey, lastReadMessageId.toString())
-                .orElse(-1L); // 없으면 -1 (가장 오래된 위치)
-    
-            if (lastReadRank < messageRank) {
-                unreadCount++;
-            }
-        }
-    
-        return unreadCount;
-    }
     
 
 
