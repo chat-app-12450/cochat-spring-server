@@ -25,15 +25,18 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MsgVectorConsumer {
 
-    private final ObjectMapper objectMapper;
+    // private final ObjectMapper objectMapper;
     private final MsgVectorProcessor msgVectorProcessor;
-
     @KafkaListener(
         topics = "message.vector",
-        groupId = "message-vector-group",
-        containerFactory = "kafkaListenerContainerFactory")
-    public void consume(String json, Acknowledgment ack) throws JsonProcessingException {
-        KafkaVectorMsgRequest message = objectMapper.readValue(json, KafkaVectorMsgRequest.class);
+        groupId = "message-vector-group"
+        // properties = {
+            // "spring.json.value.default.type=com.sns.project.chat_consumer.dto.request.KafkaVectorMsgRequest"
+        // }
+        // containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void consume(KafkaVectorMsgRequest message, Acknowledgment ack) throws JsonProcessingException {
+        // KafkaVectorMsgRequest message = objectMapper.readValue(json, KafkaVectorMsgRequest.class);
         log.info("🎯 카프카 메시지 opensearch 저장: 사용자 {}이 방 {}에 메시지 전송(내용: {})", message.getSenderId(), message.getRoomId(), message.getContent());
         msgVectorProcessor.process(message);
         ack.acknowledge();

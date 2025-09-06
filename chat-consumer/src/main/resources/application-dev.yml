@@ -12,9 +12,19 @@ spring:
   kafka:
     bootstrap-servers: localhost:29092  # 로컬 개발 환경에서는 localhost:9092를 사용합니다.
     consumer:
-      group-prefix: "chat-domain"
+      bootstrap-servers: localhost:29092
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+    producer:
+      bootstrap-servers: localhost:29092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
 
   datasource:
     url: jdbc:mysql://localhost:3306/chatdb

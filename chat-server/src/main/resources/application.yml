@@ -1,5 +1,5 @@
 spring:
   profiles:
-    active: dev  # 기본값을 개발 환경(dev)으로 설정
+    active: ${SPRING_PROFILES_ACTIVE:dev}  # 기본값을 개발 환경(dev)으로 설정
 server:
   port: 8080

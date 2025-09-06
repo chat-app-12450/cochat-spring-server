@@ -1,0 +1,76 @@
+spring:
+  frontend:
+    url: ${FRONT_END_URL}
+    
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # ex) my-kafka.kafka.svc.cluster.local:9092
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: SCRAM-SHA-256
+      sasl.jaas.config: >
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="user1" password="${KAFKA_PASSWORD}";
+      ssl.truststore.location: /app/config/kafka.truststore.jks
+      ssl.truststore.password: ${KAFKA_TRUSTSTORE_PASSWORD}
+      ssl.truststore.type: JKS
+    listener:
+      ack-mode: manual
+      retry:
+        enabled: true
+      missing-topics-fatal: false
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:chat-service}  # 필요시 ENV로 덮어쓰기
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      properties:
+        retry.backoff.ms: ${KAFKA_RETRY_BACKOFF_MS:1000}
+        max.poll.interval.ms: ${KAFKA_MAX_POLL_INTERVAL_MS:300000}
+    producer:
+      acks: all
+      retries: ${KAFKA_PRODUCER_RETRIES:2147483647}
+      properties:
+        enable.idempotence: true
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  datasource:
+    url: ${DB_URL}          # ex) jdbc:mysql://my-mysql.mysql.svc.cluster.local:3306/chatdb
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  redis:
+    host: ${REDIS_HOST}     # ex) my-redis-master.redis.svc.cluster.local
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD}          # ← 필요
+    username: ${REDIS_USERNAME:default} 
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}   # prod 기본: validate
+    properties:
+      hibernate:
+        show_sql: ${JPA_SHOW_SQL:false}
+        format_sql: ${JPA_FORMAT_SQL:false}
+
+logging:
+  level:
+    org.hibernate.SQL: OFF
+    org.hibernate.type.descriptor.sql: OFF
+    root: ${LOG_ROOT_LEVEL:info}
+    org.springframework: ${LOG_SPRING_LEVEL:info}
+    com.sns.project: ${LOG_APP_LEVEL:info}
+
+jwt:
+  expiration: ${JWT_EXPIRATION:86400000}   # 24h
+  secret: ${JWT_SECRET}                    # 반드시 Secret로 주입
+
+springdoc:
+  api-docs:
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:false}    # prod 기본 비활성
+  swagger-ui:
+    enabled: ${SPRINGDOC_SWAGGER_UI_ENABLED:false}  # prod 기본 비활성
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+    display-request-duration: true

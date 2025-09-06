@@ -65,31 +65,8 @@ public class UserController {
   public void logout() {
   }
 
-  @Operation(summary = "비밀번호 재설정 요청", 
-            description = "이메일로 비밀번호 재설정 링크를 발송합니다")
-  @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "재설정 링크 발송 성공"),
-    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
-  })
-  @PostMapping("/request-reset-password")
-  public ApiResult<String> requestPasswordReset(@RequestBody RequestPasswordResetDto request) {
-    userService.requestPasswordReset(request.getEmail());
-    return ApiResult.success("비밀번호 재생성 링크를 보냈습니다.");
-  }
 
-  @Operation(summary = "비밀번호 재설정", 
-            description = "토큰을 확인하고 새로운 비밀번호로 변경합니다")
-  @ApiResponses({
-    @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
-    @ApiResponse(responseCode = "400", description = "잘못된 토큰"),
-    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음")
-  })
-  @PostMapping("/reset-password")
-  public ApiResult<String> resetPassword(@RequestParam String token, 
-                                       @RequestBody ResetPasswordDto request) {
-    userService.resetPassword(token, request.getNewPassword());
-    return ApiResult.success("비밀번호가 성공적으로 재설정되었습니다.");
-  }
+
 
   @Operation(summary = "토큰 유효성 검사", description = "유저의 토큰이 올바른지 확인합니다")
   @ApiResponses({

@@ -26,10 +26,14 @@ public class MessageConsumer {
 
     @KafkaListener(
         topics = "message.received",
-        groupId = "message-received-group",
-        containerFactory = "kafkaListenerContainerFactory")
-    public void consume(String json, Acknowledgment ack) throws JsonProcessingException {
-        KafkaNewMsgRequest message = objectMapper.readValue(json, KafkaNewMsgRequest.class);
+        groupId = "message-received-group"
+        // containerFactory = "kafkaListenerContainerFactory",
+        // properties = {
+            // "spring.json.value.default.type=com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest"
+        // }
+    )
+    public void consume(KafkaNewMsgRequest message, Acknowledgment ack) throws JsonProcessingException {
+        // KafkaNewMsgRequest message = objectMapper.readValue(json, KafkaNewMsgRequest.class);
 
         log.info("🎯 카프카 메시지 수신: 사용자 {}이 방 {}에 메시지 전송(내용: {})", message.getSenderId(), message.getRoomId(), message.getContent());
         KafkaMsgBroadcastRequest broadcastRequest = messageProcessor.process(message);

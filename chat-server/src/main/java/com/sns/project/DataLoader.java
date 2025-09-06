@@ -7,13 +7,11 @@ import java.util.List;
 import java.util.Random;
 
 import com.sns.project.controller.user.dto.request.RequestRegisterDto;
-import com.sns.project.service.NotificationService;
 import com.sns.project.service.RedisService;
 import com.sns.project.service.following.FollowingService;
 import com.sns.project.service.user.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -24,7 +22,6 @@ import org.springframework.context.annotation.Profile;
 public class DataLoader implements CommandLineRunner {
     private final UserService userService;
     private final RedisService redisService;
-    private final NotificationService notificationService;
     private final FollowingService followingService;
     private final Random random = new Random();
     private final ChatRoomService chatRoomService;

@@ -1,15 +1,9 @@
 spring:
   frontend:
     url: http://localhost:3001
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/chatbot
-
+    
   kafka:
     bootstrap-servers: localhost:29092
-    #      - localhost:9093
-    #      - localhost:9094
-
 
     listener:
       ack-mode: manual
@@ -29,17 +23,6 @@ spring:
         enable.idempotence: true
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
 
   datasource:
     url: jdbc:mysql://localhost:3306/chatdb
@@ -66,9 +49,6 @@ logging.level:
   org.springframework: info
   com.sns.project: debug  # 프로젝트 로그는 debug 레벨 유지
 
-app:
-  domain:
-    url: http://your-frontend-domain
 
 jwt:
   expiration: 86400000  # 24시간
@@ -84,16 +64,7 @@ springdoc:
     tagsSorter: alpha  # API 태그 알파벳 정렬
     display-request-duration: true  # 요청 처리 시간 표시
 
-gcs:
-  bucket-name:  sns-bucket02
-  credentials:
-    file-path: ${GOOGLE_APPLICATION_CREDENTIALS}
-management:
-  endpoints:
-    web:
-      exposure:
-        include: prometheus
-  metrics:
-    export:
-      prometheus:
-        enabled: true
+
+
+
+
