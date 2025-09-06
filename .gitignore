@@ -2,6 +2,7 @@
 *.log
 *.class
 *.iml
+*.hprof
 .DS_Store
 
 # Gradle
