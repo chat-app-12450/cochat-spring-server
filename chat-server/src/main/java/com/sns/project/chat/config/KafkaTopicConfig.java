@@ -27,8 +27,16 @@ public class KafkaTopicConfig {
   }
 
   @Bean
-  public NewTopic messageDeliverTopic() {
-    return TopicBuilder.name("message.deliver")
+  public NewTopic messageBroadcastTopic() {
+    return TopicBuilder.name("message.broadcast")
+        .partitions(6)
+        .replicas(1)
+        .build();
+  }
+
+  @Bean
+  public NewTopic messageVectorTopic() {
+    return TopicBuilder.name("message.vector")
         .partitions(6)
         .replicas(1)
         .build();

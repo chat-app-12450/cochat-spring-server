@@ -15,6 +15,7 @@ public class ChatEnterProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final NewTopic chatEnterTopic;
 
+    // chat.enter 
     public void send(KafkaChatEnterRequest request){
         kafkaTemplate.send(chatEnterTopic.name(), request.getRoomId().toString(), request);
     }

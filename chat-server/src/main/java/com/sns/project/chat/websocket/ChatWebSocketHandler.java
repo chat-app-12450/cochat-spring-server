@@ -4,6 +4,7 @@ import com.sns.project.chat.websocket.dto.RoomScopedPayload;
 import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
 import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import java.io.IOException;
+import java.time.ZoneOffset;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,10 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sns.project.chat.kafka.producer.ChatEnterProducer;
-import com.sns.project.chat.kafka.producer.MessageProducer;
+import com.sns.project.chat.kafka.producer.MessageVectorProducer;
+import com.sns.project.chat.service.ChatService;
+import com.sns.project.chat.kafka.producer.MessageBroadcastProducer;
+import com.sns.project.core.domain.chat.ChatMessage;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -26,8 +30,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final RoomSessionManager roomSessionManager;
     private final ObjectMapper objectMapper;
-    private final MessageProducer messageProducer;
     private final ChatEnterProducer chatEnterProducer;
+    private final MessageVectorProducer messageVectorProducer;
+    private final MessageBroadcastProducer messageBroadcastProducer;
+    private final ChatService chatService;
+    
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("✅ WebSocket connected: {}", session.getId());
@@ -61,17 +68,19 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             Long roomId = json.getLong("roomId");
             String msg = json.getString("message");
             Long senderId = (Long) session.getAttributes().get("userId");
-            String clientMessageId = json.getString("clientMessageId");
 
+            ChatMessage savedMessage = chatService.saveMessage(roomId, senderId, msg);
             KafkaNewMsgRequest kafkaNewMsgRequest = KafkaNewMsgRequest.builder()
                 .roomId(roomId)
                 .senderId(senderId)
                 .content(msg)
-                .clientMessageId(clientMessageId)
-                .receivedAt(System.currentTimeMillis())
+                .receivedAt(savedMessage.getReceivedAt().toEpochSecond(ZoneOffset.UTC))
+                .messageId(savedMessage.getId())
                 .build();
-
-            messageProducer.send(kafkaNewMsgRequest);
+                
+            log.info("💙 새로운 메시지 도착 {} {}", kafkaNewMsgRequest.getRoomId(), kafkaNewMsgRequest.getSenderId());
+            messageVectorProducer.send(kafkaNewMsgRequest);
+            messageBroadcastProducer.sendDeliver(kafkaNewMsgRequest);
         }
     }
 

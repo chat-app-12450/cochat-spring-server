@@ -22,9 +22,11 @@ spring:
       group-id: ${KAFKA_CONSUMER_GROUP:chat-service}  # 필요시 ENV로 덮어쓰기
       auto-offset-reset: earliest
       enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        retry.backoff.ms: ${KAFKA_RETRY_BACKOFF_MS:1000}
-        max.poll.interval.ms: ${KAFKA_MAX_POLL_INTERVAL_MS:300000}
+        spring.json.trusted.packages: "*"
+        
     producer:
       acks: all
       retries: ${KAFKA_PRODUCER_RETRIES:2147483647}

@@ -13,9 +13,10 @@ spring:
     consumer:
       auto-offset-reset: earliest
       enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        retry.backoff.ms: 1000
-        max.poll.interval.ms: 300000
+        spring.json.trusted.packages: "*"
     producer:
       acks: all
       retries: 2147483647

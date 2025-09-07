@@ -1,0 +1,72 @@
+opensearch:
+  host: ${OPENSEARCH_HOST:opensearch-service}
+  port: ${OPENSEARCH_PORT:9200}
+  username: ${OPENSEARCH_USERNAME:admin}
+  password: ${OPENSEARCH_PASSWORD:Developer@123}
+  scheme: ${OPENSEARCH_SCHEME:https}
+  index:
+    chat:
+      name: ${OPENSEARCH_CHAT_INDEX:chat-index}
+
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
+    consumer:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+    producer:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql-service}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:chatdb}
+    username: ${MYSQL_USERNAME:chat}
+    password: ${MYSQL_PASSWORD:chat1234}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  redis:
+    host: ${REDIS_HOST:redis-service}
+    port: ${REDIS_PORT:6379}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        show_sql: false    # SQL 쿼리 숨기기
+        format_sql: false  # SQL 포맷팅 비활성화
+
+logging.level:
+  org.hibernate.SQL: OFF   # Hibernate SQL 로깅 끄기
+  org.hibernate.type.descriptor.sql: OFF  # SQL 파라미터 로깅 끄기
+  root: info              # 다른 로그는 info 레벨 유지
+  org.springframework: info
+  com.sns.project: debug  # 프로젝트 로그는 debug 레벨 유지
+server:
+  port: ${SERVER_PORT:8081}
+
+# 쿠버네티스 환경 설정
+# 환경변수를 통해 설정값을 주입받습니다.
+# 
+# OpenSearch 환경변수:
+# - OPENSEARCH_HOST, OPENSEARCH_PORT, OPENSEARCH_USERNAME, OPENSEARCH_PASSWORD, OPENSEARCH_SCHEME, OPENSEARCH_CHAT_INDEX
+# 
+# Kafka 환경변수:
+# - KAFKA_BOOTSTRAP_SERVERS
+# 
+# MySQL 환경변수:
+# - MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USERNAME, MYSQL_PASSWORD
+# 
+# Redis 환경변수:
+# - REDIS_HOST, REDIS_PORT
+# 
+# Server 환경변수:
+# - SERVER_PORT
