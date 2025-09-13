@@ -15,18 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ChatEnterConsumer {
 
-    private final ObjectMapper objectMapper;
 
     @KafkaListener(
         topics = "chat.enter",
         groupId = "chat-enter-group"
-        // containerFactory = "kafkaListenerContainerFactory",
-        // properties = {
-            // "spring.json.value.default.type=com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest"
-        // }
     )
     public void consume(KafkaChatEnterRequest request, Acknowledgment ack) throws JsonProcessingException {
-//        KafkaChatEnterRequest request = objectMapper.readValue(json, KafkaChatEnterRequest.class);
         log.info("🎯 카프카 메시지 수신: 사용자 {}님이 방 {}에 입장", request.getUserId(), request.getRoomId());
         ack.acknowledge();
     }

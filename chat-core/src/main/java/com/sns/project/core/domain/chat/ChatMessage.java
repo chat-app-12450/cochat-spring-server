@@ -24,14 +24,14 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(
-  uniqueConstraints = @UniqueConstraint(columnNames = {"chat_room_id", "clientMessageId"})
+  // uniqueConstraints = @UniqueConstraint(columnNames = {"chat_room_id"})
 )
 public class ChatMessage {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, unique = true)
-    private String clientMessageId;
+    // @Column(nullable = false, unique = true)
+    // private String clientMessageId;
     
     @ManyToOne
     @JoinColumn(name = "chat_room_id")
@@ -49,11 +49,11 @@ public class ChatMessage {
     private LocalDateTime receivedAt; // 서버가 받은 시각
     
 
-    public ChatMessage(ChatRoom chatRoom, User sender, String message, String clientMessageId) {
+    public ChatMessage(ChatRoom chatRoom, User sender, String message) {
         this.chatRoom = chatRoom;
         this.sender = sender;
         this.message = message;
-        this.clientMessageId = clientMessageId;
+        // this.clientMessageId = clientMessageId;
         this.receivedAt = LocalDateTime.now();
     }
 } 

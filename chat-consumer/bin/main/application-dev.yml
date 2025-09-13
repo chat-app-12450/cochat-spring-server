@@ -3,7 +3,7 @@ opensearch:
   port: 9200
   username: admin
   password: Developer@123
-  scheme: https
+  scheme: http
   index:
     chat:
       name: chat-index

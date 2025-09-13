@@ -6,19 +6,10 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sns.project.chat_consumer.dto.request.KafkaVectorMsgRequest;
+import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
-import org.opensearch.client.RequestOptions;
-import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.index.IndexResponse;
-import org.opensearch.common.xcontent.XContentType;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -30,15 +21,11 @@ public class MsgVectorConsumer {
     @KafkaListener(
         topics = "message.vector",
         groupId = "message-vector-group"
-        // properties = {
-            // "spring.json.value.default.type=com.sns.project.chat_consumer.dto.request.KafkaVectorMsgRequest"
-        // }
-        // containerFactory = "kafkaListenerContainerFactory"
     )
-    public void consume(KafkaVectorMsgRequest message, Acknowledgment ack) throws JsonProcessingException {
-        // KafkaVectorMsgRequest message = objectMapper.readValue(json, KafkaVectorMsgRequest.class);
+    public void consume(KafkaNewMsgRequest message, Acknowledgment ack) throws JsonProcessingException {
         log.info("🎯 카프카 메시지 opensearch 저장: 사용자 {}이 방 {}에 메시지 전송(내용: {})", message.getSenderId(), message.getRoomId(), message.getContent());
-        msgVectorProcessor.process(message);
+        // msgVectorProcessor.process(message);
+        log.info("나중에......");
         ack.acknowledge();
     }
 }

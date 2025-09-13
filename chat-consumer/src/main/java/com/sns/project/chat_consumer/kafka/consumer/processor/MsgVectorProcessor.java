@@ -1,6 +1,6 @@
 package com.sns.project.chat_consumer.kafka.consumer.processor;
 
-import com.sns.project.chat_consumer.dto.request.KafkaVectorMsgRequest;
+import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +22,10 @@ public class MsgVectorProcessor {
   private String indexName;
   private final RestHighLevelClient openSearchClient;
 
-  public void process(KafkaVectorMsgRequest message){
+  public void process(KafkaNewMsgRequest message){
     // OpenSearch에 저장
     Map<String, Object> doc = new HashMap<>();
-    doc.put("id", message.getMsgId());
+    doc.put("id", message.getMessageId());
     doc.put("chat_content", message.getContent());
     doc.put("timestamp", System.currentTimeMillis());
     doc.put("user", message.getSenderId());

@@ -11,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
-    Optional<ChatMessage> findByChatRoomAndClientMessageId(ChatRoom room, String clientMessageId);
 
     @Query("SELECT cm FROM ChatMessage cm JOIN FETCH cm.sender u "
         + "WHERE cm.chatRoom.id = :chatRoomId "

@@ -1,4 +1,4 @@
-package com.sns.project.chat_consumer.dto.request;
+package com.sns.project.core.kafka.dto.request;
 
 import lombok.Builder;
 import lombok.Data;

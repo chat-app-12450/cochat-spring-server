@@ -17,6 +17,8 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
+      group-id: chat-service  # 필요시 ENV로 덮어쓰기
+
     producer:
       acks: all
       retries: 2147483647

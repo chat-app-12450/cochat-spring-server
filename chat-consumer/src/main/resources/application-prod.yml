@@ -1,25 +1,32 @@
 opensearch:
-  host: ${OPENSEARCH_HOST:opensearch-service}
-  port: ${OPENSEARCH_PORT:9200}
-  username: ${OPENSEARCH_USERNAME:admin}
-  password: ${OPENSEARCH_PASSWORD:Developer@123}
-  scheme: ${OPENSEARCH_SCHEME:https}
+  host: ${OPENSEARCH_HOST}
+  port: ${OPENSEARCH_PORT}
+  username: ${OPENSEARCH_USERNAME}
+  password: ${OPENSEARCH_PASSWORD}
+  scheme: ${OPENSEARCH_SCHEME:http}
   index:
     chat:
       name: ${OPENSEARCH_CHAT_INDEX:chat-index}
 
 spring:
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # ex) my-kafka.kafka.svc.cluster.local:9092
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: SCRAM-SHA-256
+      sasl.jaas.config: >
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="user1" password="${KAFKA_PASSWORD}";
+      ssl.truststore.location: /app/config/kafka.truststore.jks
+      ssl.truststore.password: ${KAFKA_TRUSTSTORE_PASSWORD}
+      ssl.truststore.type: JKS    
     consumer:
-      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.trusted.packages: "*"
       enable-auto-commit: false
       auto-offset-reset: earliest
     producer:
-      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       acks: all
@@ -27,14 +34,16 @@ spring:
         enable.idempotence: true
 
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:mysql-service}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:chatdb}
-    username: ${MYSQL_USERNAME:chat}
-    password: ${MYSQL_PASSWORD:chat1234}
+    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:chatdb}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   redis:
-    host: ${REDIS_HOST:redis-service}
+    host: ${REDIS_HOST}
     port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD}          # ← 필요
+    username: ${REDIS_USERNAME} 
 
   jpa:
     hibernate:

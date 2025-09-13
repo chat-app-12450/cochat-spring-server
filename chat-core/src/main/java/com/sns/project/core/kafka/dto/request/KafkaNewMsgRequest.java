@@ -18,5 +18,6 @@ public class KafkaNewMsgRequest {
     private Long senderId;
     private String content;
     private Long receivedAt;
-    private String clientMessageId;
+    // private String clientMessageId;
+    private Long messageId;
 } 
