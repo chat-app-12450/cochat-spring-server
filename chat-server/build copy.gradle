@@ -1,0 +1,162 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.0.2'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id "org.owasp.dependencycheck" version "9.0.9"
+}
+
+group = 'com.sns'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.testcontainers:testcontainers-bom:1.19.3"
+    }
+}
+
+dependencies {
+	implementation project(":chat-core")
+
+	// ✅ JPA 관련 라이브러리 (Spring Boot 3.x 기본 사용)
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	// ✅ QueryDSL 설정 (Jakarta 버전)
+	implementation 'com.querydsl:querydsl-jpa:5.0.0:jakarta'
+	annotationProcessor(
+		'com.querydsl:querydsl-apt:5.0.0:jakarta',
+		'jakarta.annotation:jakarta.annotation-api',
+		'jakarta.persistence:jakarta.persistence-api'
+	)
+
+	// ✅ Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+
+	// ✅ Database
+	runtimeOnly 'com.h2database:h2'
+	implementation 'mysql:mysql-connector-java:8.0.32'
+
+	// ✅ JWT
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.2'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.2'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.2'
+
+	// ✅ Email
+	implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+	implementation 'org.eclipse.angus:jakarta.mail:2.0.2'
+
+	// ✅ Utilities
+	implementation 'org.mindrot:jbcrypt:0.4'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// ✅ Test Dependencies
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.mockito:mockito-junit-jupiter:5.3.1'
+	testImplementation 'it.ozimov:embedded-redis:0.7.2'
+
+	testImplementation "org.testcontainers:testcontainers:1.19.3"
+	testImplementation "org.testcontainers:junit-jupiter:1.19.3"
+//	testImplementation "org.testcontainers:redis:1.19.3"  // Redis 모듈 추가
+
+	// ✅ Swagger 3 (OpenAPI)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
+
+	// ✅ Google Cloud Storage
+	implementation 'com.google.cloud:google-cloud-storage:2.24.0'
+
+	// ✅ Guava version
+	implementation 'com.google.guava:guava:32.1.2-jre'
+
+	implementation 'org.json:json:20210307'
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	implementation 'io.micrometer:micrometer-registry-prometheus'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+
+}
+
+configurations.all {
+	resolutionStrategy {
+		force 'com.google.guava:guava:32.1.2-jre'
+		exclude group: 'com.google.guava', module: 'listenablefuture'
+	}
+}
+
+
+// QueryDSL 자동 생성된 코드 포함
+def generatedDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
+
+tasks.withType(JavaCompile).configureEach {
+	options.annotationProcessorGeneratedSourcesDirectory = file(generatedDir)
+}
+
+sourceSets {
+	main {
+		java {
+			srcDirs += generatedDir
+		}
+	}
+}
+
+
+clean {
+	delete file(generatedDir)
+}
+
+// OWASP Dependency Check 설정 (Gradle 8.5 호환)
+dependencyCheck {
+    // 보고서 형식 설정
+    format = 'HTML'
+    
+    // CVSS 점수 임계값 설정 (8점 이상이면 빌드 실패)
+    failBuildOnCVSS = 8
+    
+    // 보고서 출력 디렉토리
+    outputDirectory = "build/reports/dependency-check"
+    
+    // 자동 업데이트 설정
+    autoUpdate = true
+    
+    // NVD API 설정 (API 키 없이 실행)
+    nvd {
+        apiKey = "0c51817d-4622-4f53-bdc4-8712f7d25a19  " 
+        delay = 2000
+    }
+    
+    
+    // 스캔 대상 설정 (Gradle 8.5 호환)
+    scanConfigurations = ['runtimeClasspath']
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "passed", "skipped", "failed"
+	}
+}
+
+
