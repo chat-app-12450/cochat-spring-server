@@ -22,6 +22,9 @@ spec:
     - name: dockerhub-secret
       secret:
         secretName: dockerhub-secret
+        items:                  
+          - key: .dockerconfigjson
+            path: config.json     
 """
         }
     }
