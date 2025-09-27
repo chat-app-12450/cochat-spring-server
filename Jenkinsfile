@@ -10,13 +10,10 @@ metadata:
 spec:
   containers:
     - name: kaniko
-      image: gcr.io/kaniko-project/executor:latest
       tty: true
-      command:
-        - /busybox/sh
-      args:
-        - -c
-        - sleep 999999
+      image: gcr.io/kaniko-project/executor:debug   # ← debug 이미지!
+      command: ["/busybox/sh","-c"]                 # 컨테이너를 살아있게 유지
+      args: ["sleep 365d"]
       volumeMounts:
         - name: dockerhub-secret
           mountPath: /kaniko/.docker/
