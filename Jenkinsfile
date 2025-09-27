@@ -12,6 +12,11 @@ spec:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:latest
       tty: true
+      command:
+        - /busybox/sh
+      args:
+        - -c
+        - sleep 999999
       volumeMounts:
         - name: dockerhub-secret
           mountPath: /kaniko/.docker/
