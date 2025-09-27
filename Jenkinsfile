@@ -26,8 +26,8 @@ spec:
           readOnly: true
   volumes:
     - name: gradle-cache
-        persistentVolumeClaim:
-            claimName: gradle-cache-pvc
+      persistentVolumeClaim:
+        claimName: gradle-cache-pvc
     - name: dockerhub-secret
       secret:
         secretName: dockerhub-secret
