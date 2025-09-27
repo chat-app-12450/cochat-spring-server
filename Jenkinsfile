@@ -54,7 +54,7 @@ spec:
                     /kaniko/executor \
                       --context `pwd`/chat-server \
                       --dockerfile `pwd`/chat-server/Dockerfile \
-                      --destination=docker.io/goggleacckai/chat-server:latest \
+                      --destination=docker.io/dockeracckai/kai:latest \
                       --skip-tls-verify
                     '''
                 }
