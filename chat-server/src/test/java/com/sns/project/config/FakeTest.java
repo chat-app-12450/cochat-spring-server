@@ -23,9 +23,9 @@ public class FakeTest {
         assertTrue(true);
     }
 
-    @Test
-    public void testWillFail() {
-        // 1과 2가 같다고 주장 (무조건 실패)
-        assertEquals(1, 2, "1과 2는 다릅니다!");
-    }
+    // @Test
+    // public void testWillFail() {
+    //     // 1과 2가 같다고 주장 (무조건 실패)
+    //     assertEquals(1, 2, "1과 2는 다릅니다!");
+    // }
 }
