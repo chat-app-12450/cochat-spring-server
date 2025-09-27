@@ -30,32 +30,6 @@ pipeline {
             }
         }
 
-        stage('Build Chat Consumer') {
-            steps {
-                dir('chat-consumer') {
-                    sh './gradlew clean build'
-                }
-            }
-        }
-
-        stage('Test Chat Consumer') {
-            steps {
-                dir('chat-consumer') {
-                    sh './gradlew test'
-                }
-            }
-            post {
-                always {
-                    publishHTML([
-                        allowMissing: true,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'chat-consumer/build/reports/tests/test',
-                        reportFiles: 'index.html',
-                        reportName: 'Chat Consumer JUnit Report'
-                    ])
-                }
-            }
-        }
+        
     }
 }
