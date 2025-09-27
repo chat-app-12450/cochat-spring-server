@@ -5,6 +5,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir('chat-server') {
+                    echo "hello"
                     sh './gradlew clean build'
                 }
             }
