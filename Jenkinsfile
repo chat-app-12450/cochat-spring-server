@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     stages {
-        stage('Build Chat Server test') {
+        stage('Build Chat Server') {
             steps {
                 dir('chat-server') {
                     sh './gradlew clean build'
