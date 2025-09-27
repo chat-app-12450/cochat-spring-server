@@ -9,6 +9,12 @@ metadata:
     jenkins/jenkins-agent: "true"
 spec:
   containers:
+    - name: jnlp                        # Gradle이 실행되는 컨테이너
+      image: jenkins/inbound-agent:3327.v868139a_d00e0-6
+      tty: true
+      volumeMounts:
+        - name: gradle-cache
+          mountPath: /home/jenkins/.gradle   # ★ 캐시 경로
     - name: kaniko
       tty: true
       image: gcr.io/kaniko-project/executor:debug   # ← debug 이미지!
@@ -19,6 +25,9 @@ spec:
           mountPath: /kaniko/.docker/
           readOnly: true
   volumes:
+    - name: gradle-cache
+        persistentVolumeClaim:
+        claimName: gradle-cache-pvc
     - name: dockerhub-secret
       secret:
         secretName: dockerhub-secret
