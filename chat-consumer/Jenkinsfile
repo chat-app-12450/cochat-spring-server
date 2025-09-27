@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    stages {
+        when {
+            anyOf {
+                changeset "consumer-server/**"
+                changeset "core/**"
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                dir('consumer-server') {
+                    sh './gradlew clean build'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('consumer-server') {
+                    sh './gradlew test'
+                }
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'consumer-server/build/reports/tests/test',
+                        reportFiles: 'index.html',
+                        reportName: 'Consumer JUnit Test Report'
+                    ])
+                }
+            }
+        }
+    }
+}

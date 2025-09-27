@@ -2,13 +2,15 @@ pipeline {
     agent any
 
     stages {
-        stage('Say Hello') {
+        stage('Build') {
             steps {
-                echo 'this is jenkins pipeline'
+                dir('chat-server') {
+                    sh './gradlew clean build'
+                }
             }
         }
 
-        stage('test') {
+        stage('Test') {
             steps {
                 dir('chat-server') {
                     sh './gradlew test'
@@ -22,7 +24,7 @@ pipeline {
                         keepAll: true,
                         reportDir: 'chat-server/build/reports/tests/test',
                         reportFiles: 'index.html',
-                        reportName: 'JUnit Test Report'
+                        reportName: 'Chat JUnit Test Report'
                     ])
                 }
             }
