@@ -4,7 +4,7 @@ pipeline {
     stage('Test') {
       steps {
         echo 'Jenkinsfile is executing properly ✅'
-      }
+      }ㅁㄴㅇㅁㄴㅇㅁㄴㅇㄴㅇㅁ
     }
   }
 }
