@@ -3,8 +3,8 @@ pipeline {
   stages {
     stage('Test') {
       steps {
-        echo 'Jenkinsfile is executing properly ✅'
-      }ㅁㄴㅇㅁㄴㅇㅁㄴㅇㄴㅇㅁ
+        echo 'Jenkinsfile  ✅'
+      }
     }
   }
 }
