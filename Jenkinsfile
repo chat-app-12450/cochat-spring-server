@@ -9,16 +9,16 @@ metadata:
     jenkins/jenkins-agent: "true"
 spec:
   containers:
-    - name: jnlp                        # Gradle이 실행되는 컨테이너
+    - name: jnlp
       image: jenkins/inbound-agent:3327.v868139a_d00e0-6
       tty: true
       volumeMounts:
         - name: gradle-cache
-          mountPath: /home/jenkins/.gradle   # ★ 캐시 경로
+          mountPath: /home/jenkins/.gradle
     - name: kaniko
       tty: true
-      image: gcr.io/kaniko-project/executor:debug   # ← debug 이미지!
-      command: ["/busybox/sh","-c"]                 # 컨테이너를 살아있게 유지
+      image: gcr.io/kaniko-project/executor:debug
+      command: ["/busybox/sh","-c"]
       args: ["sleep 365d"]
       volumeMounts:
         - name: dockerhub-secret
@@ -28,14 +28,20 @@ spec:
     - name: gradle-cache
       persistentVolumeClaim:
         claimName: gradle-cache-pvc
-    - name: dockerhub-secret 
+    - name: dockerhub-secret
       secret:
         secretName: dockerhub-secret
-        items:                  
+        items:
           - key: .dockerconfigjson
-            path: config.json     
+            path: config.json
 """
         }
+    }
+
+    environment {
+        IMAGE_TAG = "build-${env.BUILD_NUMBER}-${new Date().format('yyyyMMddHHmm')}"
+        IMAGE_NAME = "docker.io/dockeracckai/kai:${IMAGE_TAG}"
+        GIT_REPO = "https://<git-user>:<token>@git.yourdomain.com/yourteam/gitops-repo.git"
     }
 
     stages {
@@ -50,14 +56,33 @@ spec:
         stage('Docker Build & Push (Kaniko)') {
             steps {
                 container('kaniko') {
-                    sh '''
+                    sh """
                     /kaniko/executor \
                       --context `pwd`/chat-server \
                       --dockerfile `pwd`/chat-server/Dockerfile \
-                      --destination=docker.io/dockeracckai/kai:latest \
+                      --destination=${IMAGE_NAME} \
                       --skip-tls-verify
-                    '''
+                    """
                 }
+            }
+        }
+
+        stage('Update GitTea Repo (for Argo CD)') {
+            steps {
+                sh '''
+                git config --global user.name "jenkins-bot"
+                git config --global user.email "jenkins@ci.local"
+
+                git clone ${GIT_REPO} gitops
+                cd gitops
+
+                # 예: k8s/deployment.yaml 내 image 라인 교체
+                sed -i "s|image: .*|image: ${IMAGE_NAME}|" k8s/chat-server/deployment.yaml
+
+                git add .
+                git commit -m "Update chat-server image to ${IMAGE_TAG}"
+                git push origin main
+                '''
             }
         }
     }
