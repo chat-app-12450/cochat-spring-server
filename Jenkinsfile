@@ -92,7 +92,7 @@ spec:
         stage('Update values & push') {
           steps {
             dir('helm_repo') {
-              withCredentials([string(credentialsId: 'gitea-personal-access-token', variable: 'GIT_TOKEN')]) {
+              withCredentials([string(credentialsId: 'gitea-pat-secret', variable: 'GIT_TOKEN')]) {
                 sh '''
                   git config user.email "jenkins@infra.local"
                   git config user.name "jenkins"
@@ -107,7 +107,6 @@ spec:
                   git push origin HEAD:main
                 '''
               }
-
             }
           }
         }
