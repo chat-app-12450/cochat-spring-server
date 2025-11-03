@@ -72,42 +72,37 @@ spec:
                 }
             }
         }
+      stage('Update Helm Repo Image Tag') {
+        steps {
+          ✅ 1. helm_repo 클론 (Gitea PAT 인증 포함)
+          rm -rf helm_repo || true
+          git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
+          
+          dir('chat-server') {
+            sh '''
 
-        stage('Checkout helm_repo') {
-          steps {
-            dir('helm_repo') {
-              // ✅ Gitea PAT로 인증해 최신 main을 "클린하게" 가져옴
-              git branch: 'main',
-                  credentialsId: 'gitea-personal-access-token',
-                  url: 'http://gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git'
+              cd helm_repo
 
-              sh '''
-                git fetch origin main
-                git checkout main
-                git reset --hard origin/main
-              '''
-            }
+              # ✅ 2. 최신 main 브랜치 동기화
+              git checkout main
+              git pull origin main
+
+              # ✅ 3. 이미지 태그 교체
+              sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
+
+              # ✅ 4. 커밋 & 푸시
+              git config --global user.email "jenkins@infra.local"
+              git config --global user.name "jenkins"
+
+              git add server/chat/values.yaml
+              git commit -am "Update chat-server image tag to ${TAG}" || echo "No changes to commit"
+
+              git push origin main
+            '''
           }
         }
+      }
 
-        stage('Update values & push') {
-          steps {
-            dir('helm_repo') {
-              sh '''
-                git config user.email "jenkins@infra.local"
-                git config user.name "jenkins"
-
-                yq e -i ".image.tag = env.TAG" server/chat/values.yaml \
-                  || sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
-
-                git add server/chat/values.yaml
-                git commit -m "Update image tag to ${TAG}" || echo "No changes"
-
-                git remote set-url origin "http://jenkins:${GIT_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
-                git push origin HEAD:main
-              '''
-            }
-          }
         }
 
     }
