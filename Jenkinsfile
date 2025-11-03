@@ -42,6 +42,7 @@ spec:
         DOCKER_REPO = 'docker.io/dockeracckai'     // Docker Hub repository
         IMAGE_NAME  = 'chat-server'                // 이미지 이름
         TAG         = "${new Date().format('yyyyMMdd')}-${UUID.randomUUID().toString().take(4)}"
+        GIT_TOKEN   = credentialsId('gitea-pat-secret')
     }
 
     stages {
@@ -92,21 +93,19 @@ spec:
         stage('Update values & push') {
           steps {
             dir('helm_repo') {
-              withCredentials([string(credentialsId: 'gitea-pat-secret', variable: 'GIT_TOKEN')]) {
-                sh '''
-                  git config user.email "jenkins@infra.local"
-                  git config user.name "jenkins"
+              sh '''
+                git config user.email "jenkins@infra.local"
+                git config user.name "jenkins"
 
-                  yq e -i ".image.tag = env.TAG" server/chat/values.yaml \
-                    || sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
+                yq e -i ".image.tag = env.TAG" server/chat/values.yaml \
+                  || sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
 
-                  git add server/chat/values.yaml
-                  git commit -m "Update image tag to ${TAG}" || echo "No changes"
+                git add server/chat/values.yaml
+                git commit -m "Update image tag to ${TAG}" || echo "No changes"
 
-                  git remote set-url origin "http://jenkins:${GIT_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
-                  git push origin HEAD:main
-                '''
-              }
+                git remote set-url origin "http://jenkins:${GIT_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
+                git push origin HEAD:main
+              '''
             }
           }
         }
