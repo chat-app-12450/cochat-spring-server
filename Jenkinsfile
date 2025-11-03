@@ -39,8 +39,8 @@ spec:
     }
 
     environment {
-        DOCKER_REPO = 'docker.io/dockeracckai'     // Docker Hub repository
-        IMAGE_NAME  = 'chat-server'                // 이미지 이름
+        DOCKER_REPO = 'docker.io/dockeracckai'     
+        IMAGE_NAME  = 'chat-server'               
         TAG         = "${new Date().format('yyyyMMdd')}-${UUID.randomUUID().toString().take(4)}"
         GIT_TOKEN   = credentialsId('gitea-pat-secret')
     }
@@ -74,22 +74,19 @@ spec:
         }
       stage('Update Helm Repo Image Tag') {
         steps {
-          rm -rf helm_repo || true
-          git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
 
           dir('chat-server') {
             sh '''
+              rm -rf helm_repo || true
+              git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
 
               cd helm_repo
 
-              # ✅ 2. 최신 main 브랜치 동기화
               git checkout main
               git pull origin main
 
-              # ✅ 3. 이미지 태그 교체
               sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
 
-              # ✅ 4. 커밋 & 푸시
               git config --global user.email "jenkins@infra.local"
               git config --global user.name "jenkins"
 
