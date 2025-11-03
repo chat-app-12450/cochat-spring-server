@@ -45,39 +45,40 @@ spec:
         GITEA_TOKEN = credentials('gitea-pat-secret')
     }
 
-    stages {
+    // stages {
 
-        stage('Build Chat Server') {
-            steps {
-                dir('chat-server') {
-                    sh '''
-                        ./gradlew clean build
-                        mv build/libs/*SNAPSHOT.jar build/libs/app.jar
-                    '''
-                }
-            }
-        }
+    //     stage('Build Chat Server') {
+    //         steps {
+    //             dir('chat-server') {
+    //                 sh '''
+    //                     ./gradlew clean build
+    //                     mv build/libs/*SNAPSHOT.jar build/libs/app.jar
+    //                 '''
+    //             }
+    //         }
+    //     }
 
-        stage('Docker Build & Push (Kaniko)') {
-            steps {
-                container('kaniko') {
-                    sh '''
-                        echo "🔹 Building image: ${DOCKER_REPO}/${IMAGE_NAME}:${TAG}"
+    //     stage('Docker Build & Push (Kaniko)') {
+    //         steps {
+    //             container('kaniko') {
+    //                 sh '''
+    //                     echo "🔹 Building image: ${DOCKER_REPO}/${IMAGE_NAME}:${TAG}"
 
-                        /kaniko/executor \
-                          --context `pwd`/chat-server \
-                          --dockerfile `pwd`/chat-server/Dockerfile \
-                          --destination=${DOCKER_REPO}/${IMAGE_NAME}:${TAG} \
-                          --skip-tls-verify
-                    '''
-                }
-            }
-        }
+    //                     /kaniko/executor \
+    //                       --context `pwd`/chat-server \
+    //                       --dockerfile `pwd`/chat-server/Dockerfile \
+    //                       --destination=${DOCKER_REPO}/${IMAGE_NAME}:${TAG} \
+    //                       --skip-tls-verify
+    //                 '''
+    //             }
+    //         }
+    //     }
 
         stage('Update Helm Repo Image Tag') {
             steps {
                 dir('chat-server') {
                     sh '''
+                      echo "${GITEA_TOKEN}"
                       ### ✅ 1. Clone helm_repo from Gitea (with PAT)
                       rm -rf helm_repo || true
                       git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
