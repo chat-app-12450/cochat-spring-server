@@ -80,7 +80,6 @@ spec:
                   credentialsId: 'gitea-personal-access-token',
                   url: 'http://gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git'
 
-              // (선택) 혹시 모를 동시 변경 대비해 최신화
               sh '''
                 git fetch origin main
                 git checkout main
@@ -93,24 +92,22 @@ spec:
         stage('Update values & push') {
           steps {
             dir('helm_repo') {
-              withCredentials([usernamePassword(credentialsId: 'gitea-username-password',
-                                                usernameVariable: 'GIT_USER',
-                                                passwordVariable: 'GIT_TOKEN')]) {
+              withCredentials([string(credentialsId: 'gitea-personal-access-token', variable: 'GIT_TOKEN')]) {
                 sh '''
-                  # values.yaml 태그 수정
+                  git config user.email "jenkins@infra.local"
+                  git config user.name "jenkins"
+
                   yq e -i ".image.tag = env.TAG" server/chat/values.yaml \
                     || sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
 
-                  git config user.email "jenkins@infra.local"
-                  git config user.name "jenkins"
                   git add server/chat/values.yaml
                   git commit -m "Update image tag to ${TAG}" || echo "No changes"
 
-                  # ✅ push는 PAT로 확실하게
-                  git remote set-url origin "http://${GIT_USER}:${GIT_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
+                  git remote set-url origin "http://jenkins:${GIT_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
                   git push origin HEAD:main
                 '''
               }
+
             }
           }
         }
