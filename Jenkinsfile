@@ -42,8 +42,10 @@ spec:
         stage('Build Chat Server') {
             steps {
                 dir('chat-server') {
-                    sh './gradlew clean build'
-                    mv build/libs/*.jar build/libs/app.jar
+                  sh '''
+                      ./gradlew clean build
+                      mv build/libs/*.jar build/libs/app.jar
+                  '''
                 }
             }
         }
