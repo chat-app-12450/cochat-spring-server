@@ -47,32 +47,32 @@ spec:
 
     stages {
 
-    //     stage('Build Chat Server') {
-    //         steps {
-    //             dir('chat-server') {
-    //                 sh '''
-    //                     ./gradlew clean build
-    //                     mv build/libs/*SNAPSHOT.jar build/libs/app.jar
-    //                 '''
-    //             }
-    //         }
-    //     }
+        stage('Build Chat Server') {
+            steps {
+                dir('chat-server') {
+                    sh '''
+                        ./gradlew clean build
+                        mv build/libs/*SNAPSHOT.jar build/libs/app.jar
+                    '''
+                }
+            }
+        }
 
-    //     stage('Docker Build & Push (Kaniko)') {
-    //         steps {
-    //             container('kaniko') {
-    //                 sh '''
-    //                     echo "🔹 Building image: ${DOCKER_REPO}/${IMAGE_NAME}:${TAG}"
+        stage('Docker Build & Push (Kaniko)') {
+            steps {
+                container('kaniko') {
+                    sh '''
+                        echo "🔹 Building image: ${DOCKER_REPO}/${IMAGE_NAME}:${TAG}"
 
-    //                     /kaniko/executor \
-    //                       --context `pwd`/chat-server \
-    //                       --dockerfile `pwd`/chat-server/Dockerfile \
-    //                       --destination=${DOCKER_REPO}/${IMAGE_NAME}:${TAG} \
-    //                       --skip-tls-verify
-    //                 '''
-    //             }
-    //         }
-    //     }
+                        /kaniko/executor \
+                          --context `pwd`/chat-server \
+                          --dockerfile `pwd`/chat-server/Dockerfile \
+                          --destination=${DOCKER_REPO}/${IMAGE_NAME}:${TAG} \
+                          --skip-tls-verify
+                    '''
+                }
+            }
+        }
 
         stage('Update Helm Repo Image Tag') {
           steps {
@@ -80,7 +80,6 @@ spec:
               withCredentials([string(credentialsId: 'gitea-pat-secret', variable: 'TOKEN')]) {
                 sh '''
                   ### ✅ 1. Clone helm_repo from Gitea (with PAT)
-                  TOKEN_CLEAN=$(echo -n "$TOKEN" | tr -d '\\n' | tr -d '\\r')
                   TOKEN_CLEAN=$(echo -n "$TOKEN" | tr -d '[:space:]')
                   rm -rf helm_repo || true
                   git clone -b main http://jenkins:${TOKEN_CLEAN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
