@@ -82,7 +82,7 @@ spec:
                   ### ✅ 1. Clone helm_repo from Gitea (with PAT)
                   TOKEN_CLEAN=$(echo -n "$TOKEN" | tr -d '\\n' | tr -d '\\r')
                   rm -rf helm_repo || true
-                  git clone -b main http://$TOKEN_CLEAN@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
+                  git clone -b main "http://jenkins:${TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
 
                   cd helm_repo
 
