@@ -44,7 +44,7 @@ spec:
                 dir('chat-server') {
                   sh '''
                       ./gradlew clean build
-                      mv build/libs/*.jar build/libs/app.jar
+                      mv build/libs/*SNAPSHOT.jar build/libs/app.jar
                   '''
                 }
             }
