@@ -71,5 +71,49 @@ spec:
                 }
             }
         }
+
+        stage('Checkout helm_repo') {
+          steps {
+            dir('helm_repo') {
+              // ✅ Gitea PAT로 인증해 최신 main을 "클린하게" 가져옴
+              git branch: 'main',
+                  credentialsId: 'gitea-personal-access-token',
+                  url: 'http://gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git'
+
+              // (선택) 혹시 모를 동시 변경 대비해 최신화
+              sh '''
+                git fetch origin main
+                git checkout main
+                git reset --hard origin/main
+              '''
+            }
+          }
+        }
+
+        stage('Update values & push') {
+          steps {
+            dir('helm_repo') {
+              withCredentials([usernamePassword(credentialsId: 'gitea-username-password',
+                                                usernameVariable: 'GIT_USER',
+                                                passwordVariable: 'GIT_TOKEN')]) {
+                sh '''
+                  # values.yaml 태그 수정
+                  yq e -i ".image.tag = env.TAG" server/chat/values.yaml \
+                    || sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
+
+                  git config user.email "jenkins@infra.local"
+                  git config user.name "jenkins"
+                  git add server/chat/values.yaml
+                  git commit -m "Update image tag to ${TAG}" || echo "No changes"
+
+                  # ✅ push는 PAT로 확실하게
+                  git remote set-url origin "http://${GIT_USER}:${GIT_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git"
+                  git push origin HEAD:main
+                '''
+              }
+            }
+          }
+        }
+
     }
 }
