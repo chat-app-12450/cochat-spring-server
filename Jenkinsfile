@@ -42,10 +42,11 @@ spec:
         DOCKER_REPO = 'docker.io/dockeracckai'     
         IMAGE_NAME  = 'chat-server'               
         TAG         = "${new Date().format('yyyyMMdd')}-${UUID.randomUUID().toString().take(4)}"
-        GIT_TOKEN   = credentialsId('gitea-pat-secret')
+        GITEA_TOKEN = credentials('gitea-pat-secret')
     }
 
     stages {
+
         stage('Build Chat Server') {
             steps {
                 dir('chat-server') {
@@ -72,34 +73,30 @@ spec:
                 }
             }
         }
-      stage('Update Helm Repo Image Tag') {
-        steps {
 
-          dir('chat-server') {
-            sh '''
-              rm -rf helm_repo || true
-              git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
+        stage('Update Helm Repo Image Tag') {
+            steps {
+                dir('chat-server') {
+                    sh '''
+                      ### ✅ 1. Clone helm_repo from Gitea (with PAT)
+                      rm -rf helm_repo || true
+                      git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
 
-              cd helm_repo
+                      cd helm_repo
 
-              git checkout main
-              git pull origin main
+                      ### ✅ 2. Replace Image Tag
+                      sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
 
-              sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
+                      ### ✅ 3. Commit and Push to main
+                      git config --global user.email "jenkins@infra.local"
+                      git config --global user.name "jenkins"
 
-              git config --global user.email "jenkins@infra.local"
-              git config --global user.name "jenkins"
-
-              git add server/chat/values.yaml
-              git commit -am "Update chat-server image tag to ${TAG}" || echo "No changes to commit"
-
-              git push origin main
-            '''
-          }
+                      git add server/chat/values.yaml
+                      git commit -am "Update chat-server image tag to ${TAG}" || echo "No changes to commit"
+                      git push origin main
+                    '''
+                }
+            }
         }
-      }
-
-        }
-
     }
 }
