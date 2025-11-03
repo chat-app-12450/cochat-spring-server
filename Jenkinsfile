@@ -45,7 +45,7 @@ spec:
         GITEA_TOKEN = credentials('gitea-pat-secret')
     }
 
-    // stages {
+    stages {
 
     //     stage('Build Chat Server') {
     //         steps {
