@@ -74,30 +74,32 @@ spec:
     //         }
     //     }
 
-        stage('Update Helm Repo Image Tag') {
-            steps {
-                dir('chat-server') {
-                    sh '''
-                      echo "${GITEA_TOKEN}"
-                      ### ✅ 1. Clone helm_repo from Gitea (with PAT)
-                      rm -rf helm_repo || true
-                      git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
+      stage('Update Helm Repo Image Tag') {
+        steps {
+          dir('chat-server') {
+            withCredentials([string(credentialsId: 'gitea-pat-secret', variable: 'TOKEN')]) {
+              sh '''
+                ### ✅ 1. Clone helm_repo from Gitea (with PAT)
+                rm -rf helm_repo || true
+                git clone -b main http://jenkins:${TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
 
-                      cd helm_repo
+                cd helm_repo
 
-                      ### ✅ 2. Replace Image Tag
-                      sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
+                ### ✅ 2. Replace Image Tag
+                sed -i 's#^\\( *tag: *\\).*$#\\1"'"$TAG"'"#' server/chat/values.yaml
 
-                      ### ✅ 3. Commit and Push to main
-                      git config --global user.email "jenkins@infra.local"
-                      git config --global user.name "jenkins"
+                ### ✅ 3. Commit and Push
+                git config --global user.email "jenkins@infra.local"
+                git config --global user.name "jenkins"
 
-                      git add server/chat/values.yaml
-                      git commit -am "Update chat-server image tag to ${TAG}" || echo "No changes to commit"
-                      git push origin main
-                    '''
-                }
+                git add server/chat/values.yaml
+                git commit -am "Update chat-server image tag to ${TAG}" || echo "No changes to commit"
+                git push origin main
+              '''
             }
+          }
         }
+      }
+
     }
 }
