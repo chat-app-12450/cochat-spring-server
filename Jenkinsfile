@@ -74,10 +74,9 @@ spec:
         }
       stage('Update Helm Repo Image Tag') {
         steps {
-          ✅ 1. helm_repo 클론 (Gitea PAT 인증 포함)
           rm -rf helm_repo || true
           git clone -b main http://jenkins:${GITEA_TOKEN}@gitea-http.infra.svc.cluster.local:3000/chaops/helm_repo.git
-          
+
           dir('chat-server') {
             sh '''
 
