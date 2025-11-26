@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.sns.project.controller.user.dto.request.RequestRegisterDto;
-import com.sns.project.service.RedisService;
-import com.sns.project.service.following.FollowingService;
-import com.sns.project.service.user.UserService;
+import com.sns.project.user.controller.dto.request.RequestRegisterDto;
+import com.sns.project.user.service.RedisService;
+import com.sns.project.user.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,6 @@ import org.springframework.context.annotation.Profile;
 public class DataLoader implements CommandLineRunner {
     private final UserService userService;
     private final RedisService redisService;
-    private final FollowingService followingService;
     private final Random random = new Random();
     private final ChatRoomService chatRoomService;
 
@@ -31,7 +29,6 @@ public class DataLoader implements CommandLineRunner {
             int userCount = 10;
             initializeUsers(userCount);
 
-            follow();
             saveChatRooms();
         }
     
@@ -76,19 +73,7 @@ public class DataLoader implements CommandLineRunner {
          * 3번 유저의 팔로잉 : 1,
          * 4번 유저의 팔로잉 : 1,
          */
-        private void follow() {
-            // 1번 유저가 2, 3, 4번 유저를 팔로우
-            followingService.followUser(1L, 2L);
-            followingService.followUser(1L, 3L);
-            followingService.followUser(1L, 4L);
-    
-            // 1번 유저 팔로워 2, 3 ,4 (3명)
-            followingService.followUser(2L, 1L);
-            followingService.followUser(3L, 1L);
-            followingService.followUser(4L, 1L);
-            
-        }
-    
+
         private void saveChatRooms() {
             User creator = userService.getUserById(1L);
             List<Long> parties = new ArrayList<>();

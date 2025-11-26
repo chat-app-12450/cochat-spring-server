@@ -2,7 +2,6 @@ package com.sns.project.chat.service;
 
 import com.sns.project.chat.controller.dto.response.ChatHistoryResponse;
 import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
-import com.sns.project.config.constants.RedisKeys;
 import com.sns.project.core.domain.chat.ChatMessage;
 import com.sns.project.core.domain.chat.ChatParticipant;
 import com.sns.project.core.repository.chat.ChatMessageRepository;
@@ -20,7 +19,7 @@ import java.util.stream.Collectors;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
-import com.sns.project.service.user.UserService;
+import com.sns.project.user.service.UserService;
 import com.sns.project.core.domain.user.User;
 
 @Service

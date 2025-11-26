@@ -14,6 +14,7 @@ spring:
     consumer:
       bootstrap-servers: localhost:29092
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      spring.json.use.type.headers: true   # 타입 헤더 기반 역직렬화 (기본 true)
       properties:
         spring.json.trusted.packages: "*"
       enable-auto-commit: false

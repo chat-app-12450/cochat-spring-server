@@ -1,10 +1,11 @@
 package com.sns.project.chat.websocket;
 
+import com.sns.project.chat.websocket.dto.MessageBroadcast;
 import com.sns.project.chat.websocket.dto.RoomScopedPayload;
 import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
 import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import java.io.IOException;
-import java.time.ZoneOffset;
+import java.time.LocalDateTime;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,11 +18,10 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sns.project.chat.kafka.producer.ChatEnterProducer;
-import com.sns.project.chat.kafka.producer.MessageVectorProducer;
+import com.sns.project.kafka.producer.ChatEnterProducer;
+import com.sns.project.kafka.producer.MsgVectorProducer;
 import com.sns.project.chat.service.ChatService;
-import com.sns.project.chat.kafka.producer.MessageBroadcastProducer;
-import com.sns.project.core.domain.chat.ChatMessage;
+import com.sns.project.kafka.producer.MsgSaveProducer;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -31,8 +31,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final RoomSessionManager roomSessionManager;
     private final ObjectMapper objectMapper;
     private final ChatEnterProducer chatEnterProducer;
-    private final MessageVectorProducer messageVectorProducer;
-    private final MessageBroadcastProducer messageBroadcastProducer;
+    private final MsgVectorProducer msgVectorProducer;
+    private final MsgSaveProducer messageBroadcastProducer;
     private final ChatService chatService;
     
     @Override
@@ -52,35 +52,52 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         JSONObject json = new JSONObject(message.getPayload());
         String type = json.getString("type");
-        
+
         if ("JOIN".equals(type)) {
             Long roomId = json.getLong("roomId");
             Long userId = (Long) session.getAttributes().get("userId");
+
+            // 1) 세션 추가
             session.getAttributes().put("roomId", roomId);
             roomSessionManager.addSession(roomId, session);
 
-            chatEnterProducer.send(KafkaChatEnterRequest.builder()
-                .roomId(roomId)
-                .userId(userId)
-                .build());
+            // 2) Kafka로 입장이벤트 발행
+            chatEnterProducer.send(
+                KafkaChatEnterRequest.builder()
+                    .roomId(roomId)
+                    .userId(userId)
+                    .build()
+            );
 
-        } else if ("MESSAGE".equals(type)) {
+            return;
+        }
+
+        if ("MESSAGE".equals(type)) {
             Long roomId = json.getLong("roomId");
             String msg = json.getString("message");
             Long senderId = (Long) session.getAttributes().get("userId");
 
-            ChatMessage savedMessage = chatService.saveMessage(roomId, senderId, msg);
-            KafkaNewMsgRequest kafkaNewMsgRequest = KafkaNewMsgRequest.builder()
+            // 1) 여기서 바로 브로드캐스트
+            Long time = System.currentTimeMillis();
+            broadcastToRoom(
+                MessageBroadcast.builder()
+                    .roomId(roomId)
+                    .senderId(senderId)
+                    .content(msg)
+                    .receivedAt(time)
+                    .build()
+            );
+
+            // 2) Kafka로 비동기 이벤트 발행 (DB 저장 + 벡터 생성)
+            KafkaNewMsgRequest event = KafkaNewMsgRequest.builder()
                 .roomId(roomId)
                 .senderId(senderId)
                 .content(msg)
-                .receivedAt(savedMessage.getReceivedAt().toEpochSecond(ZoneOffset.UTC))
-                .messageId(savedMessage.getId())
+                .receivedAt(time)
                 .build();
-                
-            log.info("💙 새로운 메시지 도착 {} {}", kafkaNewMsgRequest.getRoomId(), kafkaNewMsgRequest.getSenderId());
-            messageVectorProducer.send(kafkaNewMsgRequest);
-            messageBroadcastProducer.sendDeliver(kafkaNewMsgRequest);
+
+            msgVectorProducer.send(event); // 벡터 생성
+            messageBroadcastProducer.sendDeliver(event); // DB 저장, 로그 처리
         }
     }
 

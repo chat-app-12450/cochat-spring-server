@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import com.sns.project.service.user.TokenService;
+import com.sns.project.user.service.TokenService;
 
 import java.util.Map;
 
