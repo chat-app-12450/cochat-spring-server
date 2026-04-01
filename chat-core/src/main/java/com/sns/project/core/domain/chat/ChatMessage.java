@@ -11,6 +11,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
@@ -24,6 +25,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Table(
+  indexes = {
+    @Index(name = "idx_chat_message_room_id_id", columnList = "chat_room_id, id")
+  }
   // uniqueConstraints = @UniqueConstraint(columnNames = {"chat_room_id"})
 )
 public class ChatMessage {

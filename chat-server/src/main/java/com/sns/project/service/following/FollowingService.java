@@ -10,7 +10,7 @@ import com.sns.project.core.domain.user.User;
 import com.sns.project.controller.follow.dto.FollowingsResponse;
 import com.sns.project.controller.follow.dto.FollowUserResponse;
 import com.sns.project.controller.follow.FollowersResponse;
-import com.sns.project.service.user.UserService;
+import com.sns.project.user.UserService;
 import com.sns.project.core.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;

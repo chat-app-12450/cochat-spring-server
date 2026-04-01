@@ -25,7 +25,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: ${KAFKA_TRUSTED_PACKAGES:com.sns.project.core.kafka.dto.request}
         
     producer:
       acks: all
@@ -64,8 +64,29 @@ logging:
     com.sns.project: ${LOG_APP_LEVEL:info}
 
 jwt:
-  expiration: ${JWT_EXPIRATION:86400000}   # 24h
+  expiration: ${JWT_EXPIRATION:900000}   # 15m
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}   # 7d
   secret: ${JWT_SECRET}                    # 반드시 Secret로 주입
+
+app:
+  auth:
+    cookie:
+      access-token-name: ${AUTH_COOKIE_NAME:ACCESS_TOKEN}
+      refresh-token-name: ${AUTH_REFRESH_COOKIE_NAME:REFRESH_TOKEN}
+      csrf-token-name: ${AUTH_CSRF_COOKIE_NAME:XSRF-TOKEN}
+      secure: ${AUTH_COOKIE_SECURE:true}
+      http-only: true
+      same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
+      path: /
+      domain: ${AUTH_COOKIE_DOMAIN:}
+      max-age-seconds: ${AUTH_COOKIE_MAX_AGE_SECONDS:900}
+      refresh-max-age-seconds: ${AUTH_REFRESH_COOKIE_MAX_AGE_SECONDS:604800}
+  kafka:
+    topics:
+      chat-enter: ${KAFKA_TOPIC_CHAT_ENTER:chat.enter}
+      message-received: ${KAFKA_TOPIC_MESSAGE_RECEIVED:message.received}
+      message-broadcast: ${KAFKA_TOPIC_MESSAGE_BROADCAST:message.broadcast}
+      message-vector: ${KAFKA_TOPIC_MESSAGE_VECTOR:message.vector}
 
 springdoc:
   api-docs:

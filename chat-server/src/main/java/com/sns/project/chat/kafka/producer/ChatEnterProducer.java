@@ -2,7 +2,7 @@ package com.sns.project.chat.kafka.producer;
 
 import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
 
-import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -13,10 +13,12 @@ import lombok.RequiredArgsConstructor;
 public class ChatEnterProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final NewTopic chatEnterTopic;
+
+    @Value("${app.kafka.topics.chat-enter}")
+    private String chatEnterTopicName;
 
     // chat.enter 
     public void send(KafkaChatEnterRequest request){
-        kafkaTemplate.send(chatEnterTopic.name(), request.getRoomId().toString(), request);
+        kafkaTemplate.send(chatEnterTopicName, request.getRoomId().toString(), request);
     }
 }

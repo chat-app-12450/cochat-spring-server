@@ -4,8 +4,10 @@ package com.sns.project.core.domain.user;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sns.project.core.domain.follow.Follow;
 import com.sns.project.core.domain.notification.Notification;
+import com.sns.project.core.domain.product.Product;
 import jakarta.persistence.*;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Set;
 import lombok.*;
 
@@ -18,8 +20,8 @@ import jakarta.validation.constraints.NotBlank;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(exclude = {"followers", "followings"})
-@EqualsAndHashCode
+@ToString(exclude = {"followers", "followings", "receivedNotifications", "products"})
+@EqualsAndHashCode(exclude = {"followers", "followings", "receivedNotifications", "products"})
 @Builder
 public class User implements Serializable {
 
@@ -63,7 +65,19 @@ public class User implements Serializable {
   @OneToMany(mappedBy = "receiver", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
   private List<Notification> receivedNotifications;
 
+  // Product.seller 가 외래키(seller_id)를 실제로 관리하고,
+  // User.products 는 그 반대편을 조회하기 쉽게 보는 양방향 컬렉션이다.
+  @OneToMany(mappedBy = "seller", fetch = FetchType.LAZY)
+  @JsonIgnore
+  @Builder.Default
+  private List<Product> products = new ArrayList<>();
+
   public void setPassword(String password) {
     this.password = password;
   }
-} 
+
+  public void addProduct(Product product) {
+    products.add(product);
+    product.assignSeller(this);
+  }
+}

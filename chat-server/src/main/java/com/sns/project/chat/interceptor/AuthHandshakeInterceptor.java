@@ -1,9 +1,10 @@
 package com.sns.project.chat.interceptor;
 
-import jakarta.servlet.http.Cookie;
+import com.sns.project.auth.AuthCookieService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
@@ -11,7 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 
-import com.sns.project.service.user.TokenService;
+import com.sns.project.auth.TokenService;
 
 import java.util.Map;
 
@@ -21,6 +22,7 @@ import java.util.Map;
 public class AuthHandshakeInterceptor implements HandshakeInterceptor {
 
   private final TokenService tokenService;
+  private final AuthCookieService authCookieService;
 
   @Override
   public boolean beforeHandshake(ServerHttpRequest request,
@@ -28,28 +30,25 @@ public class AuthHandshakeInterceptor implements HandshakeInterceptor {
       WebSocketHandler wsHandler,
       Map<String, Object> attributes) throws Exception {
 
-    if (request instanceof ServletServerHttpRequest servletRequest) {
-      HttpServletRequest httpReq = servletRequest.getServletRequest();
-      Cookie[] cookies = httpReq.getCookies();
-
-      if (cookies != null) {
-        for (Cookie cookie : cookies) {
-          if ("Authorization".equals(cookie.getName())) {
-            String token = cookie.getValue();
-            log.info("📦 WebSocket token from cookie: {}", token);
-
-            Long userId = tokenService.validateToken(token);
-            if (userId != null) {
-              attributes.put("userId", userId); // WebSocketSession에 전달됨
-              return true; // 핸드셰이크 승인
-            }
+    try {
+      if (request instanceof ServletServerHttpRequest servletRequest) {
+        HttpServletRequest httpReq = servletRequest.getServletRequest();
+        String token = authCookieService.extractAccessToken(httpReq).orElse(null);
+        if (token != null) {
+          Long userId = tokenService.validateToken(token);
+          if (userId != null) {
+            attributes.put("userId", userId); // STOMP CONNECT 단계에서 다시 Principal로 승격된다.
+            return true; // 핸드셰이크 승인
           }
         }
       }
+    } catch (RuntimeException ignored) {
+      // 인증 실패는 아래에서 공통 401 처리한다.
     }
 
-    // 인증 실패
-    log.warn("❌ WebSocket 인증 실패 - 토큰 없음 또는 무효");
+    // 인증 실패 시에도 토큰/쿠키 값은 로그에 남기지 않는다.
+    log.warn("WebSocket authentication failed");
+    response.setStatusCode(HttpStatus.UNAUTHORIZED);
     return false;
   }
 

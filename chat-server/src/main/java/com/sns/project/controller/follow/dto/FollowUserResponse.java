@@ -1,20 +1,22 @@
 package com.sns.project.controller.follow.dto;
 
 import com.sns.project.core.domain.user.User;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-
-@Data
+@Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class FollowUserResponse {
+
     private Long id;
+    private String userId;
     private String name;
+    private String profileImageUrl;
+
     public FollowUserResponse(User user) {
         this.id = user.getId();
+        this.userId = user.getUserId();
         this.name = user.getName();
+        this.profileImageUrl = user.getProfile_image_url();
     }
 }

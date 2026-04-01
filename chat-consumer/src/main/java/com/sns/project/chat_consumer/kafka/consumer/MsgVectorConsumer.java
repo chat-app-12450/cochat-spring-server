@@ -19,7 +19,7 @@ public class MsgVectorConsumer {
     // private final ObjectMapper objectMapper;
     private final MsgVectorProcessor msgVectorProcessor;
     @KafkaListener(
-        topics = "message.vector",
+        topics = "${app.kafka.topics.message-vector}",
         groupId = "message-vector-group"
     )
     public void consume(KafkaNewMsgRequest message, Acknowledgment ack) throws JsonProcessingException {

@@ -16,7 +16,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: com.sns.project.core.kafka.dto.request
       group-id: chat-service  # 필요시 ENV로 덮어쓰기
 
     producer:
@@ -54,8 +54,28 @@ logging.level:
 
 
 jwt:
-  expiration: 86400000  # 24시간
+  expiration: 900000  # 15분
+  refresh-expiration: 604800000  # 7일
   secret: T+FITVBc8qEi9tZ/TgN7mfZ9wb0BqArbh4B+RMZ9zKU=
+
+app:
+  auth:
+    cookie:
+      access-token-name: ACCESS_TOKEN
+      refresh-token-name: REFRESH_TOKEN
+      csrf-token-name: XSRF-TOKEN
+      secure: false
+      http-only: true
+      same-site: Lax
+      path: /
+      max-age-seconds: 900
+      refresh-max-age-seconds: 604800
+  kafka:
+    topics:
+      chat-enter: chat.enter
+      message-received: message.received
+      message-broadcast: message.broadcast
+      message-vector: message.vector
 
 
 springdoc:
@@ -66,8 +86,3 @@ springdoc:
     operationsSorter: method  # API 문서에서 HTTP 메서드 정렬
     tagsSorter: alpha  # API 태그 알파벳 정렬
     display-request-duration: true  # 요청 처리 시간 표시
-
-
-
-
-

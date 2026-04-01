@@ -23,7 +23,7 @@ spring:
     consumer:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: ${KAFKA_TRUSTED_PACKAGES:com.sns.project.core.kafka.dto.request}
       enable-auto-commit: false
       auto-offset-reset: earliest
     producer:
@@ -61,6 +61,12 @@ logging.level:
   com.sns.project: debug  # 프로젝트 로그는 debug 레벨 유지
 server:
   port: ${SERVER_PORT:8081}
+
+app:
+  kafka:
+    topics:
+      chat-enter: ${KAFKA_TOPIC_CHAT_ENTER:chat.enter}
+      message-vector: ${KAFKA_TOPIC_MESSAGE_VECTOR:message.vector}
 
 # 쿠버네티스 환경 설정
 # 환경변수를 통해 설정값을 주입받습니다.

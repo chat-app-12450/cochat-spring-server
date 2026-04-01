@@ -2,7 +2,7 @@ package com.sns.project.chat.kafka.producer;
 
 import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.clients.admin.NewTopic;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 public class MessageVectorProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
-    private final NewTopic messageVectorTopic;
+
+    @Value("${app.kafka.topics.message-vector}")
+    private String messageVectorTopicName;
 
     public void send(KafkaNewMsgRequest message) {
-        kafkaTemplate.send(messageVectorTopic.name(), message.getRoomId().toString(), message);
+        kafkaTemplate.send(messageVectorTopicName, message.getRoomId().toString(), message);
     }
 }

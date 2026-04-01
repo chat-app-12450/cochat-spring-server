@@ -2,14 +2,16 @@ package com.sns.project.controller.follow;
 
 import com.sns.project.controller.follow.dto.FollowUserResponse;
 import java.util.List;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class FollowersResponse {
+
     private List<FollowUserResponse> followers;
+
+    public FollowersResponse(List<FollowUserResponse> followers) {
+        this.followers = followers;
+    }
 }

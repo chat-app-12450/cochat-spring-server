@@ -24,6 +24,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
+    private final ChatRoomService chatRoomService;
 
 
     private User getUserById(Long userId) {
@@ -39,12 +40,15 @@ public class ChatService {
      */
     @Transactional
     public ChatMessage saveMessage(Long roomId, Long senderId, String message) {
+        // STOMP SEND 전에 interceptor에서도 확인하지만, 저장 직전 한 번 더 검증해서 우회를 막는다.
+        chatRoomService.requireParticipant(roomId, senderId);
 
         ChatRoom chatRoom = chatRoomRepository.findById(roomId)
             .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
         User sender = getUserById(senderId);
 
         ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message));
+        chatRoom.updateLatestMessage(savedMessage);
         
         return savedMessage;
     }

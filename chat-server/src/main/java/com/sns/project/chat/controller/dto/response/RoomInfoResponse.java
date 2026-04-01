@@ -1,9 +1,14 @@
 package com.sns.project.chat.controller.dto.response;
 
 import com.sns.project.core.domain.chat.ChatParticipant;
+import com.sns.project.core.domain.chat.ChatMessage;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
+import com.sns.project.core.domain.product.Product;
+import com.sns.project.core.domain.product.ProductStatus;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
@@ -12,25 +17,76 @@ public class RoomInfoResponse {
     private Long id;
     private String name;
     private ChatRoomType type;
+    private ProductResponse product;
+    private ParticipantResponse counterpart;
+    private LastMessageResponse lastMessage;
     private List<ParticipantResponse> participants;
 
-    public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants) {
+    public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants, Long currentUserId, ChatMessage lastMessage) {
         this.id = chatRoom.getId();
         this.name = chatRoom.getName();
         this.type = chatRoom.getChatRoomType();
+        this.product = chatRoom.getProduct() != null ? new ProductResponse(chatRoom.getProduct()) : null;
         this.participants = participants.stream()
             .map(ParticipantResponse::new)
             .collect(Collectors.toList());
+        this.counterpart = chatRoom.getChatRoomType() == ChatRoomType.PRIVATE
+            ? participants.stream()
+                .map(ChatParticipant::getUser)
+                .filter(user -> !Objects.equals(user.getId(), currentUserId))
+                .findFirst()
+                .map(ParticipantResponse::new)
+                .orElse(null)
+            : null;
+        this.lastMessage = lastMessage != null ? new LastMessageResponse(lastMessage) : null;
+    }
+
+    @Getter
+    public static class ProductResponse {
+        private Long id;
+        private String title;
+        private ProductStatus status;
+
+        public ProductResponse(Product product) {
+            this.id = product.getId();
+            this.title = product.getTitle();
+            this.status = product.getStatus();
+        }
     }
 
     @Getter
     public static class ParticipantResponse {
         private Long id;
+        private String userId;
         private String name;
+        private String profileImageUrl;
 
         public ParticipantResponse(ChatParticipant chatParticipant) {
-            this.id = chatParticipant.getUser().getId();
-            this.name = chatParticipant.getUser().getName();
+            this(chatParticipant.getUser());
+        }
+
+        public ParticipantResponse(com.sns.project.core.domain.user.User user) {
+            this.id = user.getId();
+            this.userId = user.getUserId();
+            this.name = user.getName();
+            this.profileImageUrl = user.getProfile_image_url();
+        }
+    }
+
+    @Getter
+    public static class LastMessageResponse {
+        private Long messageId;
+        private Long senderId;
+        private String senderName;
+        private String content;
+        private LocalDateTime receivedAt;
+
+        public LastMessageResponse(ChatMessage chatMessage) {
+            this.messageId = chatMessage.getId();
+            this.senderId = chatMessage.getSender().getId();
+            this.senderName = chatMessage.getSender().getName();
+            this.content = chatMessage.getMessage();
+            this.receivedAt = chatMessage.getReceivedAt();
         }
     }
 }

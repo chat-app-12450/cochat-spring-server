@@ -89,8 +89,7 @@ dependencies {
 	// ✅ Guava version
 	implementation 'com.google.guava:guava:32.1.2-jre'
 
-	implementation 'org.json:json:20210307'
-	implementation 'org.springframework.kafka:spring-kafka'
+		implementation 'org.springframework.kafka:spring-kafka'
 
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -134,5 +133,4 @@ test {
 		events "passed", "skipped", "failed"
 	}
 }
-
 

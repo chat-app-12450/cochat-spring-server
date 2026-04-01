@@ -17,7 +17,7 @@ public class ChatEnterConsumer {
 
 
     @KafkaListener(
-        topics = "chat.enter",
+        topics = "${app.kafka.topics.chat-enter}",
         groupId = "chat-enter-group"
     )
     public void consume(KafkaChatEnterRequest request, Acknowledgment ack) throws JsonProcessingException {

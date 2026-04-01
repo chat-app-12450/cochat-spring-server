@@ -15,7 +15,7 @@ spring:
       bootstrap-servers: localhost:29092
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "*"
+        spring.json.trusted.packages: com.sns.project.core.kafka.dto.request
       enable-auto-commit: false
       auto-offset-reset: earliest
     producer:
@@ -52,6 +52,12 @@ logging.level:
   com.sns.project: debug  # 프로젝트 로그는 debug 레벨 유지
 server:
   port: 8081
+
+app:
+  kafka:
+    topics:
+      chat-enter: chat.enter
+      message-vector: message.vector
 
 # 참고: 만약 도커 환경에서 'kafka' 호스트명을 사용하는 경우 
 # /etc/hosts 파일에 '127.0.0.1 kafka' 항목을 추가해야 합니다.

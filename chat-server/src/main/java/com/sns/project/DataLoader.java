@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.sns.project.controller.user.dto.request.RequestRegisterDto;
+import com.sns.project.user.dto.request.RequestRegisterDto;
 import com.sns.project.service.RedisService;
 import com.sns.project.service.following.FollowingService;
-import com.sns.project.service.user.UserService;
+import com.sns.project.user.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
