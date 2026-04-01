@@ -20,9 +20,14 @@ public class RoomInfoResponse {
     private ProductResponse product;
     private ParticipantResponse counterpart;
     private LastMessageResponse lastMessage;
+    private long unreadCount;
     private List<ParticipantResponse> participants;
 
     public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants, Long currentUserId, ChatMessage lastMessage) {
+        this(chatRoom, participants, currentUserId, lastMessage, 0L);
+    }
+
+    public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants, Long currentUserId, ChatMessage lastMessage, long unreadCount) {
         this.id = chatRoom.getId();
         this.name = chatRoom.getName();
         this.type = chatRoom.getChatRoomType();
@@ -39,6 +44,7 @@ public class RoomInfoResponse {
                 .orElse(null)
             : null;
         this.lastMessage = lastMessage != null ? new LastMessageResponse(lastMessage) : null;
+        this.unreadCount = unreadCount;
     }
 
     @Getter

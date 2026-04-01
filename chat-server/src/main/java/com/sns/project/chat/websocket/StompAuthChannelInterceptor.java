@@ -1,6 +1,7 @@
 package com.sns.project.chat.websocket;
 
 import com.sns.project.chat.kafka.producer.ChatEnterProducer;
+import com.sns.project.chat.service.ChatRealtimeStateService;
 import com.sns.project.chat.service.ChatRoomService;
 import com.sns.project.core.exception.unauthorized.UnauthorizedException;
 import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
@@ -26,8 +27,10 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
     private static final Pattern SUBSCRIBE_ROOM_PATTERN = Pattern.compile("^/topic/chat/rooms/(\\d+)$");
     // 메시지 전송도 허용한 app destination만 받는다.
     private static final Pattern SEND_ROOM_PATTERN = Pattern.compile("^/app/chat/rooms/(\\d+)/messages$");
+    private static final String SUBSCRIBED_ROOM_ID = "subscribedRoomId";
 
     private final ChatRoomService chatRoomService;
+    private final ChatRealtimeStateService chatRealtimeStateService;
     private final ChatEnterProducer chatEnterProducer;
 
     @Override
@@ -43,6 +46,7 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
             case CONNECT -> handleConnect(message, accessor);
             case SUBSCRIBE -> handleSubscribe(message, accessor);
             case SEND -> handleSend(message, accessor);
+            case DISCONNECT -> handleDisconnect(message, accessor);
             default -> message;
         };
     }
@@ -59,7 +63,14 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         // 이 사용자가 해당 방의 실시간 메시지를 구독할 권한이 있는지 확인한다.
         Long userId = requireAuthenticatedUserId(accessor);
         Long roomId = extractRoomId(accessor.getDestination(), SUBSCRIBE_ROOM_PATTERN);
+        // 접근권한 확인
         chatRoomService.requireParticipant(roomId, userId);
+        Map<String, Object> attributes = sessionAttributes(accessor);
+        Object previousRoomId = attributes.put(SUBSCRIBED_ROOM_ID, roomId);
+        if (previousRoomId instanceof Long oldRoomId && !oldRoomId.equals(roomId)) {
+            chatRealtimeStateService.leaveRoom(oldRoomId, userId);
+        }
+        chatRealtimeStateService.enterRoom(roomId, userId);
 
         // raw WebSocket 시절의 JOIN 의미를 STOMP에서는 SUBSCRIBE가 대신한다.
         chatEnterProducer.send(KafkaChatEnterRequest.builder()
@@ -74,6 +85,20 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         Long userId = requireAuthenticatedUserId(accessor);
         Long roomId = extractRoomId(accessor.getDestination(), SEND_ROOM_PATTERN);
         chatRoomService.requireParticipant(roomId, userId);
+        return message;
+    }
+
+    private Message<?> handleDisconnect(Message<?> message, StompHeaderAccessor accessor) {
+        Map<String, Object> attributes = accessor.getSessionAttributes();
+        if (attributes == null) {
+            return message;
+        }
+
+        Object rawUserId = attributes.get("userId");
+        Object rawRoomId = attributes.get(SUBSCRIBED_ROOM_ID);
+        if (rawUserId instanceof Long userId && rawRoomId instanceof Long roomId) {
+            chatRealtimeStateService.leaveRoom(roomId, userId);
+        }
         return message;
     }
 

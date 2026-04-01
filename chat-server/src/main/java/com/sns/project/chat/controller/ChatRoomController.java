@@ -62,6 +62,16 @@ public class ChatRoomController {
         return ApiResult.success(chatRoomService.getChatHistory(roomId, userId, beforeMessageId, size));
     }
 
+    @PostMapping("/rooms/{roomId}/read")
+    @AuthRequired
+    public ApiResult<String> markRoomAsRead(
+        @PathVariable @Positive(message = "roomId는 1 이상이어야 합니다.") Long roomId,
+        @RequestParam(name = "message_id", required = false) @Positive(message = "message_id는 1 이상이어야 합니다.") Long messageId) {
+        Long userId = UserContext.getUserId();
+        chatRoomService.markRoomAsRead(roomId, userId, messageId);
+        return ApiResult.success("read success");
+    }
+
 
     
 }

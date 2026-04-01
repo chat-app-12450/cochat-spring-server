@@ -5,9 +5,11 @@ import com.sns.project.chat.controller.dto.response.ChatHistoryPageResponse;
 import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
 import com.sns.project.core.domain.chat.ChatMessage;
 import com.sns.project.core.domain.chat.ChatParticipant;
+import com.sns.project.core.domain.chat.ChatReadStatus;
 import com.sns.project.core.domain.product.Product;
 import com.sns.project.core.repository.chat.ChatMessageRepository;
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
+import com.sns.project.core.repository.chat.ChatReadStatusRepository;
 import com.sns.project.core.exception.forbidden.ForbiddenException;
 import com.sns.project.core.exception.badRequest.RegisterFailedException;
 import com.sns.project.core.exception.notfound.NotFoundProductException;
@@ -18,6 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +32,7 @@ import java.util.stream.Collectors;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
+import com.sns.project.chat.service.event.ChatRoomReadEvent;
 import com.sns.project.user.UserService;
 import com.sns.project.core.domain.user.User;
 
@@ -40,7 +44,10 @@ public class ChatRoomService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final UserService userService;
     private final ChatMessageRepository chatMessageRepository;
+    private final ChatReadStatusRepository chatReadStatusRepository;
+    private final ChatRealtimeStateService chatRealtimeStateService;
     private final ProductRepository productRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator) {
@@ -96,6 +103,9 @@ public class ChatRoomService {
     @Transactional(readOnly = true)
     public List<RoomInfoResponse> getUserChatRooms(User user) {
         List<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsWithParticipantsByUserId(user.getId());
+        List<Long> roomIds = chatRooms.stream()
+            .map(ChatRoom::getId)
+            .toList();
         List<Long> latestMessageIds = chatRooms.stream()
             .map(ChatRoom::getLatestMessageId)
             .filter(java.util.Objects::nonNull)
@@ -105,13 +115,17 @@ public class ChatRoomService {
             chatMessageRepository.findAllWithSenderByIdIn(latestMessageIds)
                 .forEach(message -> lastMessageById.put(message.getId(), message));
         }
+        Map<Long, Long> unreadCountByRoomId = roomIds.isEmpty()
+            ? Map.of()
+            : chatRealtimeStateService.getUnreadCounts(user.getId(), roomIds);
 
         return chatRooms.stream()
             .map(chatRoom -> new RoomInfoResponse(
                 chatRoom,
                 chatRoom.getParticipants(),
                 user.getId(),
-                lastMessageById.get(chatRoom.getLatestMessageId())))
+                lastMessageById.get(chatRoom.getLatestMessageId()),
+                unreadCountByRoomId.getOrDefault(chatRoom.getId(), 0L)))
             .collect(Collectors.toList());
     }
 
@@ -126,10 +140,11 @@ public class ChatRoomService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatHistoryPageResponse getChatHistory(Long roomId, Long userId, Long beforeMessageId, int size) {
         // 히스토리는 "로그인한 사용자"가 아니라 "해당 방 참가자"에게만 보여야 한다.
         requireParticipant(roomId, userId);
+        ChatRoom chatRoom = getChatRoomById(roomId);
 
         // 커서가 없으면 최신 메시지부터, 커서가 있으면 그 id보다 더 오래된 메시지부터 읽는다.
         // size + 1개를 읽는 이유는 다음 페이지 존재 여부(hasMore)를 판별하기 위해서다.
@@ -156,7 +171,46 @@ public class ChatRoomService {
         // reverse 이후 첫 메시지가 "이번 페이지에서 가장 오래된 메시지"다.
         // 다음 요청은 이 id보다 더 작은 메시지들만 가져오면 되므로 before 커서로 내려준다.
         Long nextBeforeMessageId = hasMore && !messages.isEmpty() ? messages.get(0).getId() : null;
+        markRoomAsRead(chatRoom, userId, chatRoom.getLatestMessageId());
+        applicationEventPublisher.publishEvent(new ChatRoomReadEvent(roomId, userId));
         return new ChatHistoryPageResponse(messages, nextBeforeMessageId, hasMore);
+    }
+
+    @Transactional
+    public void markRoomAsRead(Long roomId, Long userId, Long messageId) {
+        requireParticipant(roomId, userId);
+        ChatRoom chatRoom = getChatRoomById(roomId);
+        markRoomAsRead(chatRoom, userId, messageId != null ? messageId : chatRoom.getLatestMessageId());
+        applicationEventPublisher.publishEvent(new ChatRoomReadEvent(roomId, userId));
+    }
+
+    private void markRoomAsRead(ChatRoom chatRoom, Long userId, Long messageId) {
+        if (messageId == null) {
+            return;
+        }
+
+        // 1차 시도: 이미 읽음 상태 row가 있다면 "더 큰 messageId로만" 바로 갱신한다.
+        // 늦게 도착한 예전 읽음 요청(예: 100)이 최신 읽음 포인터(예: 120)를 덮어쓰지 못하게
+        // update 조건을 lastReadMessageId < newMessageId 로 제한해둔다.
+        int updated = chatReadStatusRepository.updateIfLastReadIdIsSmaller(userId, chatRoom.getId(), messageId);
+        if (updated > 0) {
+            return;
+        }
+
+        // 2차 시도: update가 0건이었다는 건 두 경우다.
+        // - 이미 더 큰 읽음 포인터가 저장돼 있어서 갱신할 필요가 없음
+        // - 이 유저/방 조합의 읽음 상태 row가 아직 없음
+        // row가 있으면 엔티티 메서드로 한 번 더 안전하게 갱신하고,
+        // 없으면 처음 읽는 사용자이므로 새 ChatReadStatus를 만든다.
+        chatReadStatusRepository.findByUserIdAndRoomId(userId, chatRoom.getId())
+            .ifPresentOrElse(
+                readStatus -> readStatus.markAsRead(messageId),
+                () -> chatReadStatusRepository.save(
+                    new ChatReadStatus(
+                        userService.getUserById(userId),
+                        chatRoom,
+                        messageId))
+            );
     }
 
 

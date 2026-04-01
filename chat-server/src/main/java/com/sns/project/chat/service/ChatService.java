@@ -8,7 +8,9 @@ import com.sns.project.core.repository.chat.ChatRoomRepository;
 import com.sns.project.core.repository.user.UserRepository;
 import com.sns.project.core.exception.notfound.ChatRoomNotFoundException;
 import com.sns.project.core.exception.notfound.NotFoundUserException;
+import com.sns.project.chat.service.event.ChatMessageCreatedEvent;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
     private final ChatRoomService chatRoomService;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
 
     private User getUserById(Long userId) {
@@ -49,6 +52,7 @@ public class ChatService {
 
         ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message));
         chatRoom.updateLatestMessage(savedMessage);
+        applicationEventPublisher.publishEvent(new ChatMessageCreatedEvent(roomId, senderId));
         
         return savedMessage;
     }

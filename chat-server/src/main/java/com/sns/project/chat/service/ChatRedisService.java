@@ -77,6 +77,14 @@ public class ChatRedisService {
         return Optional.ofNullable(chatRedisTemplate.opsForValue().get(key));
     }
 
+    public Optional<Long> getLongValue(String key) {
+        return getValue(key).map(Long::parseLong);
+    }
+
+    public Long incrementValue(String key, long delta) {
+        return chatRedisTemplate.opsForValue().increment(key, delta);
+    }
+
     public Boolean setIfAbsent(String key, String value, Duration timeout) {
         return chatRedisTemplate.opsForValue().setIfAbsent(key, value, timeout);
     }
@@ -142,6 +150,10 @@ public class ChatRedisService {
 
     public void incrementHash(String unreadCountKey, String messageId, int i) {
         chatRedisTemplate.opsForHash().increment(unreadCountKey, messageId, i);
+    }
+
+    public void deleteHashValue(String key, String hashKey) {
+        chatRedisTemplate.opsForHash().delete(key, hashKey);
     }
 
 
