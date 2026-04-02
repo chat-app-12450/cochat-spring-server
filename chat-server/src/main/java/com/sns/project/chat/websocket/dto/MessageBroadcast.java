@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class MessageBroadcast {
     private final String type = "MESSAGE";
     private Long messageId;
+    private String clientMessageId;
     private Long roomId;
     private Long senderId;
     private String content;

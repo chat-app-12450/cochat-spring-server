@@ -40,7 +40,7 @@ public class ChatService {
      * 메시지를 저장합니다.
      */
     @Transactional
-    public ChatMessage saveMessage(Long roomId, Long senderId, String message) {
+    public ChatMessage saveMessage(Long roomId, Long senderId, String message, String clientMessageId) {
         // STOMP SEND 전에 interceptor에서도 확인하지만, 저장 직전 한 번 더 검증해서 우회를 막는다.
         chatRoomService.requireParticipant(roomId, senderId);
 
@@ -51,7 +51,7 @@ public class ChatService {
         ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message));
         chatRoom.updateLatestMessage(savedMessage);
         // 메시지 저장과 원본 이벤트 적재를 같은 트랜잭션으로 묶는다.
-        chatOutboxService.enqueueChatMessageCreated(savedMessage);
+        chatOutboxService.enqueueChatMessageCreated(savedMessage, clientMessageId);
         
         return savedMessage;
     }

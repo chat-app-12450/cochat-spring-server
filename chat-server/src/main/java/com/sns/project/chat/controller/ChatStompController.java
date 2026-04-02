@@ -27,7 +27,7 @@ public class ChatStompController {
                             @Valid StompChatSendRequest payload,
                             Principal principal) {
         Long senderId = extractUserId(principal);
-        ChatMessage savedMessage = chatService.saveMessage(roomId, senderId, payload.getMessage());
+        ChatMessage savedMessage = chatService.saveMessage(roomId, senderId, payload.getMessage(), payload.getClientMessageId());
 
         log.info("STOMP message accepted: roomId={}, senderId={}", roomId, senderId);
     }

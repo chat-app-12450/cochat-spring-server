@@ -1,7 +1,10 @@
 package com.sns.project.chat.service;
 
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
+import com.sns.project.core.repository.chat.ChatMessageRepository;
+import com.sns.project.core.repository.chat.RoomUnreadCountProjection;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +19,7 @@ public class ChatRealtimeStateService {
 
     private final ChatRedisService chatRedisService;
     private final ChatParticipantRepository chatParticipantRepository;
+    private final ChatMessageRepository chatMessageRepository;
 
     public void enterRoom(Long roomId, Long userId) {
         String key = presenceKey(roomId, userId);
@@ -54,17 +58,56 @@ public class ChatRealtimeStateService {
     }
 
     public void clearUnreadCount(Long roomId, Long userId) {
-        chatRedisService.deleteHashValue(unreadCountKey(userId), String.valueOf(roomId));
+        // 0을 명시적으로 넣어두면 다음 방 목록 조회 때 "없는 field"와 구분할 수 있다.
+        chatRedisService.setHashValue(unreadCountKey(userId), String.valueOf(roomId), "0");
     }
 
     public Map<Long, Long> getUnreadCounts(Long userId, List<Long> roomIds) {
         Map<Long, Long> unreadCountByRoomId = new HashMap<>();
+        List<Long> missingRoomIds = new ArrayList<>();
         String key = unreadCountKey(userId);
+
         for (Long roomId : roomIds) {
-            chatRedisService.getHashValue(key, String.valueOf(roomId))
-                .map(Long::parseLong)
-                .filter(count -> count > 0)
-                .ifPresent(count -> unreadCountByRoomId.put(roomId, count));
+            String roomIdKey = String.valueOf(roomId);
+            // key: chat:unread:user:${userId}
+            // hashkey: room id
+            // hashvalue: unread count
+            chatRedisService.getHashValue(key, roomIdKey)
+                .ifPresentOrElse(value -> {
+                    Long count = Long.parseLong(value);
+                    if (count > 0) {
+                        unreadCountByRoomId.put(roomId, count);
+                    }
+                }, () -> missingRoomIds.add(roomId));
+        }
+
+        if (missingRoomIds.isEmpty()) {
+            return unreadCountByRoomId;
+        }
+
+        Map<Long, Long> rebuiltUnreadCounts = rebuildUnreadCounts(userId, missingRoomIds);
+        for (Long roomId : missingRoomIds) {
+            Long unreadCount = rebuiltUnreadCounts.getOrDefault(roomId, 0L);
+            chatRedisService.setHashValue(key, String.valueOf(roomId), String.valueOf(unreadCount));
+            if (unreadCount > 0) {
+                unreadCountByRoomId.put(roomId, unreadCount);
+            }
+        }
+
+        return unreadCountByRoomId;
+    }
+
+    private Map<Long, Long> rebuildUnreadCounts(Long userId, List<Long> roomIds) {
+        Map<Long, Long> unreadCountByRoomId = new HashMap<>();
+        if (roomIds.isEmpty()) {
+            return unreadCountByRoomId;
+        }
+
+        // Redis가 비었을 때만 DB 원본 포인터(lastReadMessageId) 기준으로 unread를 재계산한다.
+        // 평소 요청마다 COUNT 쿼리를 치지 않고, 캐시 miss 복구 경로로만 쓰는 것이 목적이다.
+        List<RoomUnreadCountProjection> unreadCounts = chatMessageRepository.countUnreadMessagesByRoomIds(userId, roomIds);
+        for (RoomUnreadCountProjection unreadCount : unreadCounts) {
+            unreadCountByRoomId.put(unreadCount.getRoomId(), unreadCount.getUnreadCount());
         }
         return unreadCountByRoomId;
     }

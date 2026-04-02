@@ -39,6 +39,7 @@ public class ChatMessageCreatedBroadcastConsumer {
         Long roomId = broadcastMessage.getRoomId();
         MessageBroadcast payload = MessageBroadcast.builder()
             .messageId(broadcastMessage.getMessageId())
+            .clientMessageId(broadcastMessage.getClientMessageId())
             .roomId(roomId)
             .senderId(broadcastMessage.getSenderId())
             .content(broadcastMessage.getContent())

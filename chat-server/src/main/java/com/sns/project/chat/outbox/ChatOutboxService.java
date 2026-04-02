@@ -27,12 +27,13 @@ public class ChatOutboxService {
     @Value("${app.kafka.topics.chat-room-read}")
     private String chatRoomReadTopicName;
 
-    public void enqueueChatMessageCreated(ChatMessage chatMessage) {
+    public void enqueueChatMessageCreated(ChatMessage chatMessage, String clientMessageId) {
         KafkaNewMsgRequest payload = KafkaNewMsgRequest.builder()
             .roomId(chatMessage.getChatRoom().getId())
             .senderId(chatMessage.getSender().getId())
             .content(chatMessage.getMessage())
             .receivedAt(chatMessage.getReceivedAt().toEpochSecond(ZoneOffset.UTC))
+            .clientMessageId(clientMessageId)
             .messageId(chatMessage.getId())
             .build();
 
