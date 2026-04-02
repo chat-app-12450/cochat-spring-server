@@ -4,28 +4,15 @@ spring:
     
   kafka:
     bootstrap-servers: localhost:29092
-
-    listener:
-      ack-mode: manual
-      retry:
-        enabled: true
-      missing-topics-fatal: false
     consumer:
       auto-offset-reset: earliest
       enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: com.sns.project.core.kafka.dto.request
-      group-id: chat-service  # 필요시 ENV로 덮어쓰기
 
     producer:
       acks: all
       retries: 2147483647
       properties:
         enable.idempotence: true
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   datasource:
     url: jdbc:mysql://localhost:3306/chatdb
@@ -72,10 +59,13 @@ app:
       refresh-max-age-seconds: 604800
   kafka:
     topics:
-      chat-enter: chat.enter
-      message-received: message.received
-      message-broadcast: message.broadcast
-      message-vector: message.vector
+      chat-message-created: chat.message.created
+      chat-room-read: chat.room.read
+  outbox:
+    relay:
+      fixed-delay-ms: 1000
+      batch-size: 100
+      max-retry-count: 10
 
 
 springdoc:

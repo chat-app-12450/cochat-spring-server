@@ -9,7 +9,7 @@ import com.sns.project.user.dto.request.ResetPasswordDto;
 import com.sns.project.user.dto.response.ResponseUserDto;
 import com.sns.project.core.domain.user.User;
 import com.sns.project.core.exception.unauthorized.UnauthorizedException;
-import com.sns.project.handler.exceptionHandler.response.ApiResult;
+import com.sns.project.common.api.ApiResult;
 import com.sns.project.auth.TokenService;
 import com.sns.project.user.UserService;
 import jakarta.validation.Valid;

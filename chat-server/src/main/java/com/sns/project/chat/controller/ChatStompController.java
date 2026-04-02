@@ -1,16 +1,12 @@
 package com.sns.project.chat.controller;
 
 import com.sns.project.chat.controller.dto.request.StompChatSendRequest;
-import com.sns.project.chat.kafka.producer.MessageBroadcastProducer;
-import com.sns.project.chat.kafka.producer.MessageVectorProducer;
 import com.sns.project.chat.service.ChatService;
 import com.sns.project.chat.websocket.StompPrincipal;
 import com.sns.project.core.domain.chat.ChatMessage;
 import com.sns.project.core.exception.unauthorized.UnauthorizedException;
-import com.sns.project.core.kafka.dto.request.KafkaNewMsgRequest;
 import jakarta.validation.Valid;
 import java.security.Principal;
-import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -25,8 +21,6 @@ import org.springframework.validation.annotation.Validated;
 public class ChatStompController {
 
     private final ChatService chatService;
-    private final MessageVectorProducer messageVectorProducer;
-    private final MessageBroadcastProducer messageBroadcastProducer;
 
     @MessageMapping("/chat/rooms/{roomId}/messages")
     public void sendMessage(@DestinationVariable Long roomId,
@@ -35,17 +29,7 @@ public class ChatStompController {
         Long senderId = extractUserId(principal);
         ChatMessage savedMessage = chatService.saveMessage(roomId, senderId, payload.getMessage());
 
-        KafkaNewMsgRequest kafkaNewMsgRequest = KafkaNewMsgRequest.builder()
-            .roomId(roomId)
-            .senderId(senderId)
-            .content(payload.getMessage())
-            .receivedAt(savedMessage.getReceivedAt().toEpochSecond(ZoneOffset.UTC))
-            .messageId(savedMessage.getId())
-            .build();
-
         log.info("STOMP message accepted: roomId={}, senderId={}", roomId, senderId);
-        messageVectorProducer.send(kafkaNewMsgRequest);
-        messageBroadcastProducer.sendDeliver(kafkaNewMsgRequest);
     }
 
     private Long extractUserId(Principal principal) {

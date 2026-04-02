@@ -13,27 +13,15 @@ spring:
       ssl.truststore.location: /app/config/kafka.truststore.jks
       ssl.truststore.password: ${KAFKA_TRUSTSTORE_PASSWORD}
       ssl.truststore.type: JKS
-    listener:
-      ack-mode: manual
-      retry:
-        enabled: true
-      missing-topics-fatal: false
     consumer:
-      group-id: ${KAFKA_CONSUMER_GROUP:chat-service}  # 필요시 ENV로 덮어쓰기
       auto-offset-reset: earliest
       enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: ${KAFKA_TRUSTED_PACKAGES:com.sns.project.core.kafka.dto.request}
         
     producer:
       acks: all
       retries: ${KAFKA_PRODUCER_RETRIES:2147483647}
       properties:
         enable.idempotence: true
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   datasource:
     url: ${DB_URL}          # ex) jdbc:mysql://my-mysql.mysql.svc.cluster.local:3306/chatdb
@@ -83,10 +71,13 @@ app:
       refresh-max-age-seconds: ${AUTH_REFRESH_COOKIE_MAX_AGE_SECONDS:604800}
   kafka:
     topics:
-      chat-enter: ${KAFKA_TOPIC_CHAT_ENTER:chat.enter}
-      message-received: ${KAFKA_TOPIC_MESSAGE_RECEIVED:message.received}
-      message-broadcast: ${KAFKA_TOPIC_MESSAGE_BROADCAST:message.broadcast}
-      message-vector: ${KAFKA_TOPIC_MESSAGE_VECTOR:message.vector}
+      chat-message-created: ${KAFKA_TOPIC_CHAT_MESSAGE_CREATED:chat.message.created}
+      chat-room-read: ${KAFKA_TOPIC_CHAT_ROOM_READ:chat.room.read}
+  outbox:
+    relay:
+      fixed-delay-ms: ${OUTBOX_RELAY_FIXED_DELAY_MS:1000}
+      batch-size: ${OUTBOX_RELAY_BATCH_SIZE:100}
+      max-retry-count: ${OUTBOX_RELAY_MAX_RETRY_COUNT:10}
 
 springdoc:
   api-docs:

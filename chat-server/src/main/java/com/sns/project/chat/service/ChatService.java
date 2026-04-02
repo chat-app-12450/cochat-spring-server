@@ -1,5 +1,6 @@
 package com.sns.project.chat.service;
 
+import com.sns.project.chat.outbox.ChatOutboxService;
 import com.sns.project.core.domain.chat.ChatMessage;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.user.User;
@@ -8,9 +9,6 @@ import com.sns.project.core.repository.chat.ChatRoomRepository;
 import com.sns.project.core.repository.user.UserRepository;
 import com.sns.project.core.exception.notfound.ChatRoomNotFoundException;
 import com.sns.project.core.exception.notfound.NotFoundUserException;
-import com.sns.project.chat.service.event.ChatMessageCreatedEvent;
-
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +25,7 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
     private final ChatRoomService chatRoomService;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final ChatOutboxService chatOutboxService;
 
 
     private User getUserById(Long userId) {
@@ -52,7 +50,8 @@ public class ChatService {
 
         ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message));
         chatRoom.updateLatestMessage(savedMessage);
-        applicationEventPublisher.publishEvent(new ChatMessageCreatedEvent(roomId, senderId));
+        // 메시지 저장과 원본 이벤트 적재를 같은 트랜잭션으로 묶는다.
+        chatOutboxService.enqueueChatMessageCreated(savedMessage);
         
         return savedMessage;
     }

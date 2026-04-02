@@ -2,13 +2,11 @@ package com.sns.project;
 
 import com.sns.project.chat.service.ChatRoomService;
 import com.sns.project.core.domain.user.User;
+import com.sns.project.follow.FollowingService;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import com.sns.project.user.dto.request.RequestRegisterDto;
-import com.sns.project.service.RedisService;
-import com.sns.project.service.following.FollowingService;
 import com.sns.project.user.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -21,9 +19,7 @@ import org.springframework.context.annotation.Profile;
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
     private final UserService userService;
-    private final RedisService redisService;
     private final FollowingService followingService;
-    private final Random random = new Random();
     private final ChatRoomService chatRoomService;
 
         @Override
@@ -104,4 +100,3 @@ public class DataLoader implements CommandLineRunner {
 //            chatService.saveMessage(3L, "test", 1L);
     }
 }
-

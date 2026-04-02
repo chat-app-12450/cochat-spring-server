@@ -1,5 +1,6 @@
 package com.sns.project.chat.service;
 
+import com.sns.project.chat.outbox.ChatOutboxService;
 import com.sns.project.chat.controller.dto.response.ChatHistoryResponse;
 import com.sns.project.chat.controller.dto.response.ChatHistoryPageResponse;
 import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
@@ -19,8 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
-import com.sns.project.chat.service.event.ChatRoomReadEvent;
 import com.sns.project.user.UserService;
 import com.sns.project.core.domain.user.User;
 
@@ -46,8 +44,8 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatReadStatusRepository chatReadStatusRepository;
     private final ChatRealtimeStateService chatRealtimeStateService;
+    private final ChatOutboxService chatOutboxService;
     private final ProductRepository productRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Transactional
     public RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator) {
@@ -172,7 +170,10 @@ public class ChatRoomService {
         // 다음 요청은 이 id보다 더 작은 메시지들만 가져오면 되므로 before 커서로 내려준다.
         Long nextBeforeMessageId = hasMore && !messages.isEmpty() ? messages.get(0).getId() : null;
         markRoomAsRead(chatRoom, userId, chatRoom.getLatestMessageId());
-        applicationEventPublisher.publishEvent(new ChatRoomReadEvent(roomId, userId));
+        
+        // 읽음 projection은 이제 내부 Spring 이벤트가 아니라 outbox -> Kafka consumer 경로로 흘린다.
+        chatOutboxService.enqueueChatRoomRead(roomId, userId, chatRoom.getLatestMessageId());
+        
         return new ChatHistoryPageResponse(messages, nextBeforeMessageId, hasMore);
     }
 
@@ -180,8 +181,11 @@ public class ChatRoomService {
     public void markRoomAsRead(Long roomId, Long userId, Long messageId) {
         requireParticipant(roomId, userId);
         ChatRoom chatRoom = getChatRoomById(roomId);
-        markRoomAsRead(chatRoom, userId, messageId != null ? messageId : chatRoom.getLatestMessageId());
-        applicationEventPublisher.publishEvent(new ChatRoomReadEvent(roomId, userId));
+        Long targetMessageId = messageId != null ? messageId : chatRoom.getLatestMessageId();
+        markRoomAsRead(chatRoom, userId, targetMessageId);
+        
+        // 읽음 projection reset은 chat.room.read 토픽 consumer가 Redis에 반영한다.
+        chatOutboxService.enqueueChatRoomRead(roomId, userId, targetMessageId);
     }
 
     private void markRoomAsRead(ChatRoom chatRoom, Long userId, Long messageId) {

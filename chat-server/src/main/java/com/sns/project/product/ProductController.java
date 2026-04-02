@@ -10,7 +10,7 @@ import com.sns.project.product.dto.request.UpdateProductStatusRequest;
 import com.sns.project.product.dto.response.ProductDetailResponse;
 import com.sns.project.product.dto.response.ProductListResponse;
 import com.sns.project.core.domain.product.ProductStatus;
-import com.sns.project.handler.exceptionHandler.response.ApiResult;
+import com.sns.project.common.api.ApiResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

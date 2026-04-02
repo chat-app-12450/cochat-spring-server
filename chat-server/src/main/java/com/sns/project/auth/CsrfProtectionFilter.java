@@ -1,7 +1,7 @@
 package com.sns.project.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sns.project.handler.exceptionHandler.response.ApiResult;
+import com.sns.project.common.api.ApiResult;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

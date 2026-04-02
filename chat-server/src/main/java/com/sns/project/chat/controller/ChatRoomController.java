@@ -8,7 +8,7 @@ import com.sns.project.chat.controller.dto.response.ChatHistoryResponse;
 import com.sns.project.chat.controller.dto.response.ChatHistoryPageResponse;
 import com.sns.project.chat.controller.dto.response.RoomInfoResponse;
 import com.sns.project.core.domain.user.User;
-import com.sns.project.handler.exceptionHandler.response.ApiResult;
+import com.sns.project.common.api.ApiResult;
 import com.sns.project.chat.service.ChatRoomService;
 import com.sns.project.user.UserService;
 

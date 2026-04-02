@@ -1,10 +1,8 @@
 package com.sns.project.chat.websocket;
 
-import com.sns.project.chat.kafka.producer.ChatEnterProducer;
 import com.sns.project.chat.service.ChatRealtimeStateService;
 import com.sns.project.chat.service.ChatRoomService;
 import com.sns.project.core.exception.unauthorized.UnauthorizedException;
-import com.sns.project.core.kafka.dto.request.KafkaChatEnterRequest;
 import java.security.Principal;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -31,7 +29,6 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
 
     private final ChatRoomService chatRoomService;
     private final ChatRealtimeStateService chatRealtimeStateService;
-    private final ChatEnterProducer chatEnterProducer;
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -72,11 +69,6 @@ public class StompAuthChannelInterceptor implements ChannelInterceptor {
         }
         chatRealtimeStateService.enterRoom(roomId, userId);
 
-        // raw WebSocket 시절의 JOIN 의미를 STOMP에서는 SUBSCRIBE가 대신한다.
-        chatEnterProducer.send(KafkaChatEnterRequest.builder()
-            .roomId(roomId)
-            .userId(userId)
-            .build());
         return message;
     }
 

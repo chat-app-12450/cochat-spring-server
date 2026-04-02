@@ -1,7 +1,7 @@
 package com.sns.project.auth;
 
 import com.sns.project.core.exception.unauthorized.UnauthorizedException;
-import com.sns.project.service.RedisService;
+import com.sns.project.common.redis.RedisService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
