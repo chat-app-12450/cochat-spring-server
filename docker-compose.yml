@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
 
   zookeeper:
@@ -41,18 +39,17 @@ services:
     networks:
       - monitoring_net
 
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: postgres
     ports:
-      - "3306:3306"
+      - "5432:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chatdb
-      MYSQL_USER: chat
-      MYSQL_PASSWORD: chat1234
+      POSTGRES_DB: chatdb
+      POSTGRES_USER: chat
+      POSTGRES_PASSWORD: chat1234
     volumes:
-      - mysql_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - monitoring_net
 
@@ -73,7 +70,7 @@ services:
 #    ports:
 #      - "8080:8080"
 #    depends_on:
-#      - mysql
+#      - postgres
 #      - redis
 #      - mongo
 #      - kafka
@@ -86,7 +83,7 @@ services:
 #      MAIL_PORT: 587
 #      MAIL_USERNAME: your_email@gmail.com
 #      MAIL_PASSWORD: your_email_password
-#      DB_URL: jdbc:mysql://mysql:3306/chatdb
+#      DB_URL: jdbc:postgresql://postgres:5432/chatdb
 #      APP_DOMAIN_URL: http://localhost:3001
 #      DB_USERNAME: chat
 #      DB_PASSWORD: chat1234
@@ -104,7 +101,7 @@ services:
 
 
 volumes:
-  mysql_data:
+  postgres_data:
   mongo_data:
 
 networks:

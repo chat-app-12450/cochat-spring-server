@@ -34,10 +34,10 @@ spring:
         enable.idempotence: true
 
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:chatdb}
-    username: ${MYSQL_USERNAME}
-    password: ${MYSQL_PASSWORD}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
   redis:
     host: ${REDIS_HOST}
@@ -77,8 +77,8 @@ app:
 # Kafka 환경변수:
 # - KAFKA_BOOTSTRAP_SERVERS
 # 
-# MySQL 환경변수:
-# - MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USERNAME, MYSQL_PASSWORD
+# PostgreSQL 환경변수:
+# - DB_URL, DB_USERNAME, DB_PASSWORD
 # 
 # Redis 환경변수:
 # - REDIS_HOST, REDIS_PORT
