@@ -43,22 +43,22 @@ public class ChatReadStatus {
     @JoinColumn(name = "chat_room_id")
     private ChatRoom chatRoom;
 
-    @Column(nullable = false)
-    private Long lastReadMessageId;
+    @Column(name = "last_read_seq", nullable = false)
+    private Long lastReadSeq;
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    public ChatReadStatus(User user, ChatRoom chatRoom, Long lastReadMessageId) {
+    public ChatReadStatus(User user, ChatRoom chatRoom, Long lastReadSeq) {
         this.user = user;
         this.chatRoom = chatRoom;
-        this.lastReadMessageId = lastReadMessageId;
+        this.lastReadSeq = lastReadSeq;
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void markAsRead(Long lastReadMessageId) {
-        if (this.lastReadMessageId == null || this.lastReadMessageId < lastReadMessageId) {
-            this.lastReadMessageId = lastReadMessageId;
+    public void markAsRead(Long lastReadSeq) {
+        if (this.lastReadSeq == null || this.lastReadSeq < lastReadSeq) {
+            this.lastReadSeq = lastReadSeq;
             this.updatedAt = LocalDateTime.now();
         }
     }

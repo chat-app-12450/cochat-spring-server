@@ -14,8 +14,10 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ChatHistoryResponse {
     private Long id;
+    private Long messageSeq;
     private String content;
     private Long senderId;
     private LocalDateTime createdAt;
+    private Long unreadCount;
 
 }

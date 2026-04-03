@@ -29,6 +29,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
         WHERE cp.chatRoom = c
           AND cp.user.id = :userId
       )
+        AND c.openChat = false
       ORDER BY
         CASE WHEN c.latestMessageAt IS NULL THEN 1 ELSE 0 END,
         c.latestMessageAt DESC,
@@ -62,6 +63,52 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
       @Param("productId") Long productId,
       @Param("sellerId") Long sellerId,
       @Param("buyerId") Long buyerId);
+
+  @Query("""
+      SELECT DISTINCT c
+      FROM ChatRoom c
+      LEFT JOIN FETCH c.participants p
+      LEFT JOIN FETCH p.user
+      LEFT JOIN FETCH c.product product
+      WHERE c.id = :roomId
+      """)
+  Optional<ChatRoom> findByIdWithParticipants(@Param("roomId") Long roomId);
+
+  @Query("""
+      SELECT DISTINCT c
+      FROM ChatRoom c
+      LEFT JOIN FETCH c.participants p
+      LEFT JOIN FETCH p.user
+      LEFT JOIN FETCH c.product product
+      WHERE c.chatRoomType = com.sns.project.core.domain.chat.ChatRoomType.GROUP
+        AND c.openChat = true
+        AND (:keyword IS NULL OR :keyword = '' OR LOWER(c.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+      ORDER BY
+        CASE WHEN c.latestMessageAt IS NULL THEN 1 ELSE 0 END,
+        c.latestMessageAt DESC,
+        c.id DESC
+      """)
+  List<ChatRoom> searchOpenGroupRooms(@Param("keyword") String keyword);
+
+  @Query("""
+      SELECT DISTINCT c
+      FROM ChatRoom c
+      JOIN FETCH c.participants p
+      JOIN FETCH p.user
+      LEFT JOIN FETCH c.product product
+      WHERE c.openChat = true
+        AND EXISTS (
+          SELECT 1
+          FROM ChatParticipant cp
+          WHERE cp.chatRoom = c
+            AND cp.user.id = :userId
+      )
+      ORDER BY
+        CASE WHEN c.latestMessageAt IS NULL THEN 1 ELSE 0 END,
+        c.latestMessageAt DESC,
+        c.id DESC
+      """)
+  List<ChatRoom> findJoinedOpenChatRoomsByUserId(@Param("userId") Long userId);
 
   // @Query("SELECT c FROM ChatRoom c WHERE c.id = :roomId")
   // Optional<ChatRoom> findById(@Param("roomId") Long roomId);

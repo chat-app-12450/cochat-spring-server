@@ -26,6 +26,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ChatRoomService chatRoomService;
     private final ChatOutboxService chatOutboxService;
+    private final ChatRealtimeStateService chatRealtimeStateService;
 
 
     private User getUserById(Long userId) {
@@ -48,10 +49,12 @@ public class ChatService {
             .orElseThrow(() -> new ChatRoomNotFoundException(roomId));
         User sender = getUserById(senderId);
 
-        ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message));
+        Long messageSeq = chatRoom.nextMessageSeq();
+        ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message, messageSeq));
         chatRoom.updateLatestMessage(savedMessage);
         // 메시지 저장과 원본 이벤트 적재를 같은 트랜잭션으로 묶는다.
-        chatOutboxService.enqueueChatMessageCreated(savedMessage, clientMessageId);
+        long unreadCount = chatRealtimeStateService.countInitialUnreadUsers(roomId, senderId);
+        chatOutboxService.enqueueChatMessageCreated(savedMessage, clientMessageId, unreadCount);
         
         return savedMessage;
     }

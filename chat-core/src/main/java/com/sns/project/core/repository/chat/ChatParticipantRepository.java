@@ -4,6 +4,7 @@ import com.sns.project.core.domain.chat.ChatParticipant;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.user.User;
 import java.util.Set;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,8 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     List<ChatParticipant> findByUser(User user);
     boolean existsByChatRoomAndUser(ChatRoom chatRoom, User user);
     boolean existsByChatRoomIdAndUserId(Long roomId, Long userId);
+    Optional<ChatParticipant> findByChatRoomIdAndUserId(Long roomId, Long userId);
+    void deleteByChatRoomIdAndUserId(Long roomId, Long userId);
     
     @Query("SELECT cp.chatRoom FROM ChatParticipant cp WHERE cp.user.id = :userId")
     List<ChatRoom> findChatRoomsByUserId(@Param("userId") Long userId);

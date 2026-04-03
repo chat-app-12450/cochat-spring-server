@@ -1,4 +1,4 @@
-package com.sns.project.core.kafka.dto.event;
+package com.sns.project.chat.websocket.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -6,12 +6,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
-@NoArgsConstructor
-@AllArgsConstructor
 @Builder
-public class ChatRoomReadKafkaEvent {
+@AllArgsConstructor
+@NoArgsConstructor
+public class ChatReadReceiptBroadcast {
+    private final String type = "READ";
     private Long roomId;
-    private Long userId;
+    private Long readerId;
     private Long previousReadSeq;
     private Long newReadSeq;
 }

@@ -27,7 +27,7 @@ public class ChatOutboxService {
     @Value("${app.kafka.topics.chat-room-read}")
     private String chatRoomReadTopicName;
 
-    public void enqueueChatMessageCreated(ChatMessage chatMessage, String clientMessageId) {
+    public void enqueueChatMessageCreated(ChatMessage chatMessage, String clientMessageId, Long unreadCount) {
         KafkaNewMsgRequest payload = KafkaNewMsgRequest.builder()
             .roomId(chatMessage.getChatRoom().getId())
             .senderId(chatMessage.getSender().getId())
@@ -35,6 +35,8 @@ public class ChatOutboxService {
             .receivedAt(chatMessage.getReceivedAt().toEpochSecond(ZoneOffset.UTC))
             .clientMessageId(clientMessageId)
             .messageId(chatMessage.getId())
+            .messageSeq(chatMessage.getMessageSeq())
+            .unreadCount(unreadCount)
             .build();
 
         outboxEventRepository.save(OutboxEvent.pending(
@@ -48,15 +50,16 @@ public class ChatOutboxService {
         ));
     }
 
-    public void enqueueChatRoomRead(Long roomId, Long userId, Long messageId) {
-        if (messageId == null) {
+    public void enqueueChatRoomRead(Long roomId, Long userId, Long previousReadSeq, Long newReadSeq) {
+        if (newReadSeq == null || java.util.Objects.equals(previousReadSeq, newReadSeq)) {
             return;
         }
 
         ChatRoomReadKafkaEvent payload = ChatRoomReadKafkaEvent.builder()
             .roomId(roomId)
             .userId(userId)
-            .messageId(messageId)
+            .previousReadSeq(previousReadSeq)
+            .newReadSeq(newReadSeq)
             .build();
 
         outboxEventRepository.save(OutboxEvent.pending(

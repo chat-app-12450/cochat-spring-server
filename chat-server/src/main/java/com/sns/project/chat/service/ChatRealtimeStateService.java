@@ -44,6 +44,7 @@ public class ChatRealtimeStateService {
             .orElse(false);
     }
 
+    // 채팅방 참가자들의 방안읽음수 갱신
     public void incrementUnreadCounts(Long roomId, Long senderId) {
         List<Long> participantIds = chatParticipantRepository.findParticipantIdsByRoomId(roomId);
         for (Long participantId : participantIds) {
@@ -55,6 +56,21 @@ public class ChatRealtimeStateService {
             }
             chatRedisService.incrementHash(unreadCountKey(participantId), String.valueOf(roomId), 1);
         }
+    }
+    
+    public long countInitialUnreadUsers(Long roomId, Long senderId) {
+        long unreadCount = 0;
+        List<Long> participantIds = chatParticipantRepository.findParticipantIdsByRoomId(roomId);
+        for (Long participantId : participantIds) {
+            if (participantId.equals(senderId)) {
+                continue;
+            }
+            if (isUserActiveInRoom(roomId, participantId)) {
+                continue;
+            }
+            unreadCount += 1;
+        }
+        return unreadCount;
     }
 
     public void clearUnreadCount(Long roomId, Long userId) {
@@ -103,7 +119,7 @@ public class ChatRealtimeStateService {
             return unreadCountByRoomId;
         }
 
-        // Redis가 비었을 때만 DB 원본 포인터(lastReadMessageId) 기준으로 unread를 재계산한다.
+        // Redis가 비었을 때만 DB 원본 포인터(lastReadSeq) 기준으로 unread를 재계산한다.
         // 평소 요청마다 COUNT 쿼리를 치지 않고, 캐시 miss 복구 경로로만 쓰는 것이 목적이다.
         List<RoomUnreadCountProjection> unreadCounts = chatMessageRepository.countUnreadMessagesByRoomIds(userId, roomIds);
         for (RoomUnreadCountProjection unreadCount : unreadCounts) {

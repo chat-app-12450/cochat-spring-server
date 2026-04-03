@@ -9,6 +9,6 @@ import lombok.Getter;
 public class ChatHistoryPageResponse {
 
     private final List<ChatHistoryResponse> messages;
-    private final Long nextBeforeMessageId;
+    private final Long nextBeforeMessageSeq;
     private final boolean hasMore;
 }

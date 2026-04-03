@@ -29,7 +29,10 @@ import lombok.NoArgsConstructor;
 
 @Table(
     indexes = {
-        @Index(name = "idx_chat_room_latest_message_at", columnList = "latest_message_at")
+        @Index(name = "idx_chat_room_latest_message_at", columnList = "latest_message_at"),
+        @Index(name = "idx_chat_room_type", columnList = "chat_room_type"),
+        @Index(name = "idx_chat_room_open_chat", columnList = "open_chat"),
+        @Index(name = "idx_chat_room_last_message_seq", columnList = "last_message_seq")
     })
 @Entity
 @NoArgsConstructor
@@ -44,7 +47,18 @@ public class ChatRoom {
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "chat_room_type")
     private ChatRoomType chatRoomType;
+
+    @Column(length = 500)
+    private String description;
+
+    @Column(name = "open_chat", nullable = false)
+    @Builder.Default
+    private boolean openChat = false;
+
+    @Column(name = "max_participants")
+    private Integer maxParticipants;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", nullable = false)
@@ -60,6 +74,10 @@ public class ChatRoom {
     @Column(name = "latest_message_at")
     private LocalDateTime latestMessageAt;
 
+    @Column(name = "last_message_seq", nullable = false)
+    @Builder.Default
+    private Long lastMessageSeq = 0L;
+
     // @OneToMany(mappedBy = "chatRoom", cascade = CascadeType.ALL)
     // private List<ChatMessage> messages = new ArrayList<>();
 
@@ -67,15 +85,24 @@ public class ChatRoom {
      @Builder.Default
      private List<ChatParticipant> participants = new ArrayList<>();
 
-    public ChatRoom(String name, ChatRoomType chatRoomType, User creator, Product product) {
+    public ChatRoom(String name, ChatRoomType chatRoomType, String description, boolean openChat, Integer maxParticipants, User creator, Product product) {
         this.name = name;
         this.chatRoomType = chatRoomType;
+        this.description = description;
+        this.openChat = openChat;
+        this.maxParticipants = maxParticipants;
         this.creator = creator;
         this.product = product;
+        this.lastMessageSeq = 0L;
     }
 
     public void updateLatestMessage(ChatMessage chatMessage) {
         this.latestMessageId = chatMessage.getId();
         this.latestMessageAt = chatMessage.getReceivedAt();
+    }
+
+    public Long nextMessageSeq() {
+        this.lastMessageSeq = (this.lastMessageSeq == null ? 0L : this.lastMessageSeq) + 1L;
+        return this.lastMessageSeq;
     }
 }

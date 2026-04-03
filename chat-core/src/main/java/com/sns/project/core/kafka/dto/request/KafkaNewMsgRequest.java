@@ -20,4 +20,6 @@ public class KafkaNewMsgRequest {
     private Long receivedAt;
     private String clientMessageId;
     private Long messageId;
+    private Long messageSeq;
+    private Long unreadCount;
 } 

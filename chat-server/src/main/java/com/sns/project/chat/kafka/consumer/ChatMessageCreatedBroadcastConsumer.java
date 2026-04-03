@@ -39,11 +39,13 @@ public class ChatMessageCreatedBroadcastConsumer {
         Long roomId = broadcastMessage.getRoomId();
         MessageBroadcast payload = MessageBroadcast.builder()
             .messageId(broadcastMessage.getMessageId())
+            .messageSeq(broadcastMessage.getMessageSeq())
             .clientMessageId(broadcastMessage.getClientMessageId())
             .roomId(roomId)
             .senderId(broadcastMessage.getSenderId())
             .content(broadcastMessage.getContent())
             .receivedAt(broadcastMessage.getReceivedAt())
+            .unreadCount(broadcastMessage.getUnreadCount())
             .build();
 
         messagingTemplate.convertAndSend("/topic/chat/rooms/" + roomId, payload);

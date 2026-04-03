@@ -26,7 +26,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @Table(
   indexes = {
-    @Index(name = "idx_chat_message_room_id_id", columnList = "chat_room_id, id")
+    @Index(name = "idx_chat_message_room_id_id", columnList = "chat_room_id, id"),
+    @Index(name = "idx_chat_message_room_id_message_seq", columnList = "chat_room_id, message_seq")
   }
   // uniqueConstraints = @UniqueConstraint(columnNames = {"chat_room_id"})
 )
@@ -45,17 +46,20 @@ public class ChatMessage {
     @JoinColumn(name = "sender_id")
     private User sender;
 
+    @Column(name = "message_seq", nullable = false)
+    private Long messageSeq;
+
     @Column(nullable = false)
     private String message;
-
 
     @Column(nullable = false)
     private LocalDateTime receivedAt; // 서버가 받은 시각
     
 
-    public ChatMessage(ChatRoom chatRoom, User sender, String message) {
+    public ChatMessage(ChatRoom chatRoom, User sender, String message, Long messageSeq) {
         this.chatRoom = chatRoom;
         this.sender = sender;
+        this.messageSeq = messageSeq;
         this.message = message;
         // this.clientMessageId = clientMessageId;
         this.receivedAt = LocalDateTime.now();

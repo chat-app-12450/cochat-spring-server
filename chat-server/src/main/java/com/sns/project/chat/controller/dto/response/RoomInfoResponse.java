@@ -16,7 +16,12 @@ import lombok.Getter;
 public class RoomInfoResponse {
     private Long id;
     private String name;
+    private String description;
     private ChatRoomType type;
+    private boolean openChat;
+    private boolean joined;
+    private int participantCount;
+    private Integer maxParticipants;
     private ProductResponse product;
     private ParticipantResponse counterpart;
     private LastMessageResponse lastMessage;
@@ -30,11 +35,16 @@ public class RoomInfoResponse {
     public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants, Long currentUserId, ChatMessage lastMessage, long unreadCount) {
         this.id = chatRoom.getId();
         this.name = chatRoom.getName();
+        this.description = chatRoom.getDescription();
         this.type = chatRoom.getChatRoomType();
+        this.openChat = chatRoom.isOpenChat();
         this.product = chatRoom.getProduct() != null ? new ProductResponse(chatRoom.getProduct()) : null;
         this.participants = participants.stream()
             .map(ParticipantResponse::new)
             .collect(Collectors.toList());
+        this.participantCount = this.participants.size();
+        this.maxParticipants = chatRoom.getMaxParticipants();
+        this.joined = this.participants.stream().anyMatch(participant -> Objects.equals(participant.getId(), currentUserId));
         this.counterpart = chatRoom.getChatRoomType() == ChatRoomType.PRIVATE
             ? participants.stream()
                 .map(ChatParticipant::getUser)

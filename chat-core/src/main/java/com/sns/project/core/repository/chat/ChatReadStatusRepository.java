@@ -11,20 +11,21 @@ import com.sns.project.core.domain.chat.ChatReadStatus;
 
 public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Long> {
     Optional<ChatReadStatus> findByUserIdAndChatRoomId(Long userId, Long chatRoomId);
+    java.util.List<ChatReadStatus> findAllByChatRoomId(Long chatRoomId);
     
     @Modifying
     @Query("""
         UPDATE ChatReadStatus cr
-        SET cr.lastReadMessageId = :newMessageId,
+        SET cr.lastReadSeq = :newReadSeq,
             cr.updatedAt = CURRENT_TIMESTAMP
         WHERE cr.user.id = :userId
           AND cr.chatRoom.id = :roomId
-          AND (cr.lastReadMessageId IS NULL OR cr.lastReadMessageId < :newMessageId)
+          AND (cr.lastReadSeq IS NULL OR cr.lastReadSeq < :newReadSeq)
     """)
-    int updateIfLastReadIdIsSmaller(
+    int updateIfLastReadSeqIsSmaller(
         @Param("userId") Long userId,
         @Param("roomId") Long roomId,
-        @Param("newMessageId") Long newMessageId
+        @Param("newReadSeq") Long newReadSeq
     );
 
     @Query("SELECT cr FROM ChatReadStatus cr where cr.user.id = :userId and cr.chatRoom.id = :roomId")

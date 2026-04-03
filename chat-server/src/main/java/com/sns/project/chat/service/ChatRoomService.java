@@ -49,7 +49,7 @@ public class ChatRoomService {
 
     @Transactional
     public RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator) {
-        return createRoom(name, participantIds, creator, null);
+        return createRoom(name, participantIds, creator, null, null, false, null);
     }
 
     @Transactional
@@ -66,28 +66,47 @@ public class ChatRoomService {
             .map(chatRoom -> new RoomInfoResponse(chatRoom, chatRoom.getParticipants(), buyerId, null))
             .orElseGet(() -> {
                 User buyer = userService.getUserById(buyerId);
-                return createRoom(product.getTitle(), List.of(sellerId), buyer, product);
+                return createRoom(product.getTitle(), List.of(sellerId), buyer, product, null, false, null);
             });
     }
 
     @Transactional
-    private RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator, Product product) {
+    public RoomInfoResponse createOpenGroupRoom(String name, String description, Integer maxParticipants, User creator) {
+        ChatRoom chatRoom = ChatRoom.builder()
+            .name(name.trim())
+            .description(normalizeDescription(description))
+            .chatRoomType(ChatRoomType.GROUP)
+            .openChat(true)
+            .maxParticipants(maxParticipants)
+            .creator(creator)
+            .build();
+        chatRoomRepository.save(chatRoom);
+
+        ChatParticipant creatorParticipant = chatParticipantRepository.save(new ChatParticipant(chatRoom, creator));
+        return new RoomInfoResponse(chatRoom, List.of(creatorParticipant), creator.getId(), null);
+    }
+
+    @Transactional
+    private RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator, Product product, String description, boolean openChat, Integer maxParticipants) {
         if (participantIds.size() == 0) {
             throw new IllegalArgumentException("최소 두명의 참여자가 있어야합니다.");
         }
-        ChatRoomType type = participantIds.size() > 2 ? ChatRoomType.GROUP : ChatRoomType.PRIVATE;
+        Set<Long> uniqueParticipantIds = new HashSet<>(participantIds);
+        uniqueParticipantIds.add(creator.getId());
+        ChatRoomType type = uniqueParticipantIds.size() > 2 ? ChatRoomType.GROUP : ChatRoomType.PRIVATE;
         
         ChatRoom chatRoom = ChatRoom.builder()
                                     .name(name)
+                                    .description(normalizeDescription(description))
                                     .chatRoomType(type)
+                                    .openChat(openChat)
+                                    .maxParticipants(maxParticipants)
                                     .creator(creator)
                                     .product(product)
                                     .build();
         chatRoomRepository.save(chatRoom);
 
 
-        Set<Long> uniqueParticipantIds = new HashSet<>(participantIds);
-        uniqueParticipantIds.add(creator.getId());
         List<User> participants = userService.getUsersByIds(uniqueParticipantIds);
         List<ChatParticipant> chatParticipants = new ArrayList<>();
         for (User participant : participants) {
@@ -99,8 +118,83 @@ public class ChatRoomService {
     }
 
     @Transactional(readOnly = true)
+    public List<RoomInfoResponse> searchOpenGroupRooms(String keyword, Long userId) {
+        List<ChatRoom> groupRooms = chatRoomRepository.searchOpenGroupRooms(normalizeKeyword(keyword));
+        Map<Long, ChatMessage> lastMessageById = loadLastMessages(groupRooms);
+
+        return groupRooms.stream()
+            .map(chatRoom -> new RoomInfoResponse(
+                chatRoom,
+                chatRoom.getParticipants(),
+                userId,
+                lastMessageById.get(chatRoom.getLatestMessageId())))
+            .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomInfoResponse> getJoinedOpenGroupRooms(Long userId) {
+        List<ChatRoom> groupRooms = chatRoomRepository.findJoinedOpenChatRoomsByUserId(userId);
+        Map<Long, ChatMessage> lastMessageById = loadLastMessages(groupRooms);
+
+        return groupRooms.stream()
+            .map(chatRoom -> new RoomInfoResponse(
+                chatRoom,
+                chatRoom.getParticipants(),
+                userId,
+                lastMessageById.get(chatRoom.getLatestMessageId())))
+            .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public RoomInfoResponse joinOpenGroupRoom(Long roomId, Long userId) {
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        validateOpenGroupRoom(chatRoom);
+
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)) {
+            if (chatRoom.getMaxParticipants() != null && chatRoom.getParticipants().size() >= chatRoom.getMaxParticipants()) {
+                throw new RegisterFailedException("채팅방 정원이 가득 찼습니다.");
+            }
+            User user = userService.getUserById(userId);
+            chatParticipantRepository.save(new ChatParticipant(chatRoom, user));
+            chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        }
+
+        Map<Long, ChatMessage> lastMessageById = loadLastMessages(List.of(chatRoom));
+        return new RoomInfoResponse(chatRoom, chatRoom.getParticipants(), userId, lastMessageById.get(chatRoom.getLatestMessageId()));
+    }
+
+    @Transactional
+    public void leaveOpenGroupRoom(Long roomId, Long userId) {
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        validateOpenGroupRoom(chatRoom);
+
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)) {
+            throw new ForbiddenException("채팅방 참여자가 아닙니다.");
+        }
+
+        chatParticipantRepository.deleteByChatRoomIdAndUserId(roomId, userId);
+    }
+
+    @Transactional(readOnly = true)
     public List<RoomInfoResponse> getUserChatRooms(User user) {
         List<ChatRoom> chatRooms = chatRoomRepository.findChatRoomsWithParticipantsByUserId(user.getId());
+        return buildRoomResponses(chatRooms, user.getId(), true);
+    }
+
+    @Transactional(readOnly = true)
+    public RoomInfoResponse getRoomInfo(Long roomId, Long userId) {
+        requireParticipant(roomId, userId);
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        return buildRoomResponses(List.of(chatRoom), userId, true).stream()
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+    }
+
+    private List<RoomInfoResponse> buildRoomResponses(List<ChatRoom> chatRooms, Long userId, boolean includeUnreadCount) {
         List<Long> roomIds = chatRooms.stream()
             .map(ChatRoom::getId)
             .toList();
@@ -113,15 +207,15 @@ public class ChatRoomService {
             chatMessageRepository.findAllWithSenderByIdIn(latestMessageIds)
                 .forEach(message -> lastMessageById.put(message.getId(), message));
         }
-        Map<Long, Long> unreadCountByRoomId = roomIds.isEmpty()
+        Map<Long, Long> unreadCountByRoomId = !includeUnreadCount || roomIds.isEmpty()
             ? Map.of()
-            : chatRealtimeStateService.getUnreadCounts(user.getId(), roomIds);
+            : chatRealtimeStateService.getUnreadCounts(userId, roomIds);
 
         return chatRooms.stream()
             .map(chatRoom -> new RoomInfoResponse(
                 chatRoom,
                 chatRoom.getParticipants(),
-                user.getId(),
+                userId,
                 lastMessageById.get(chatRoom.getLatestMessageId()),
                 unreadCountByRoomId.getOrDefault(chatRoom.getId(), 0L)))
             .collect(Collectors.toList());
@@ -139,16 +233,20 @@ public class ChatRoomService {
     }
 
     @Transactional
-    public ChatHistoryPageResponse getChatHistory(Long roomId, Long userId, Long beforeMessageId, int size) {
-        // 히스토리는 "로그인한 사용자"가 아니라 "해당 방 참가자"에게만 보여야 한다.
+    public ChatHistoryPageResponse getChatHistory(Long roomId, Long userId, Long beforeMessageSeq, int size) {
+        // 방 참가자인지 확인
         requireParticipant(roomId, userId);
-        ChatRoom chatRoom = getChatRoomById(roomId);
+        ChatRoom chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
+            .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
 
-        // 커서가 없으면 최신 메시지부터, 커서가 있으면 그 id보다 더 오래된 메시지부터 읽는다.
-        // size + 1개를 읽는 이유는 다음 페이지 존재 여부(hasMore)를 판별하기 위해서다.
-        List<ChatMessage> chatMessages = beforeMessageId == null
+        // DB는 조건에 맞는 전체 집합을 먼저 정렬한 뒤 LIMIT를 적용한다.
+        // 따라서 `message_seq < beforeMessageSeq` 조건에서 ASC + LIMIT를 쓰면
+        // "커서 바로 앞 30개"가 아니라 "가장 오래된 30개"가 잘릴 수 있다.
+        // 그래서 먼저 DESC로 커서 직전 구간을 자르고, 응답 직전에만 reverse 해서
+        // 화면에는 오래된 순으로 보여준다.
+        List<ChatMessage> chatMessages = beforeMessageSeq == null
             ? chatMessageRepository.findRecentMessagesWithSender(roomId, PageRequest.of(0, size + 1))
-            : chatMessageRepository.findMessagesWithSenderBeforeId(roomId, beforeMessageId, PageRequest.of(0, size + 1));
+            : chatMessageRepository.findMessagesWithSenderBeforeMessageSeq(roomId, beforeMessageSeq, PageRequest.of(0, size + 1));
 
         boolean hasMore = chatMessages.size() > size;
         if (hasMore) {
@@ -156,49 +254,72 @@ public class ChatRoomService {
             chatMessages = new ArrayList<>(chatMessages.subList(0, size));
         }
 
-        // DB에서는 DESC로 잘라와야 "이전 페이지"를 정확히 가져오기 쉽다.
-        // beforeMessageId - 30 같은 숫자 계산으로 범위를 자르면 id가 중간에 비어 있거나
-        // 삭제된 메시지가 있는 경우 페이지 경계가 틀어질 수 있으므로, "id < beforeMessageId" 커서를 그대로 쓴다.
-        // 화면은 오래된 메시지 -> 최신 메시지 순이 자연스러우므로 응답 직전에만 뒤집는다.
+        // repository 쿼리는 DESC(최신순)로 가져오므로, 화면 표시 전에 reverse 해서
+        // 오래된 순 -> 최신 순으로 맞춘다.
         Collections.reverse(chatMessages);
 
+        RoomReadUpdate readUpdate = markRoomAsRead(chatRoom, userId, chatRoom.getLastMessageSeq());
+        chatOutboxService.enqueueChatRoomRead(
+            roomId,
+            userId,
+            readUpdate.previousReadSeq(),
+            readUpdate.newReadSeq()
+        );
+
+        Map<Long, Long> lastReadSeqByUserId = buildLastReadSeqByUserId(
+            roomId,
+            userId,
+            readUpdate.newReadSeq()
+        );
         List<ChatHistoryResponse> messages = chatMessages.stream()
-            .map(chatMessage -> new ChatHistoryResponse(chatMessage.getId(), chatMessage.getMessage(), chatMessage.getSender().getId(), chatMessage.getReceivedAt()))
+            .map(chatMessage -> new ChatHistoryResponse(
+                chatMessage.getId(),
+                chatMessage.getMessageSeq(),
+                chatMessage.getMessage(),
+                chatMessage.getSender().getId(),
+                chatMessage.getReceivedAt(),
+                countUnreadParticipants(chatMessage, chatRoom.getParticipants(), lastReadSeqByUserId)))
             .collect(Collectors.toList());
 
         // reverse 이후 첫 메시지가 "이번 페이지에서 가장 오래된 메시지"다.
-        // 다음 요청은 이 id보다 더 작은 메시지들만 가져오면 되므로 before 커서로 내려준다.
-        Long nextBeforeMessageId = hasMore && !messages.isEmpty() ? messages.get(0).getId() : null;
-        markRoomAsRead(chatRoom, userId, chatRoom.getLatestMessageId());
-        
-        // 읽음 projection은 이제 내부 Spring 이벤트가 아니라 outbox -> Kafka consumer 경로로 흘린다.
-        chatOutboxService.enqueueChatRoomRead(roomId, userId, chatRoom.getLatestMessageId());
-        
-        return new ChatHistoryPageResponse(messages, nextBeforeMessageId, hasMore);
+        // 다음 요청은 이 seq보다 더 작은 메시지들만 가져오면 되므로 before 커서로 내려준다.
+        Long nextBeforeMessageSeq = hasMore && !messages.isEmpty() ? messages.get(0).getMessageSeq() : null;
+        return new ChatHistoryPageResponse(messages, nextBeforeMessageSeq, hasMore);
     }
 
     @Transactional
-    public void markRoomAsRead(Long roomId, Long userId, Long messageId) {
+    public void markRoomAsRead(Long roomId, Long userId, Long readUptoSeq) {
         requireParticipant(roomId, userId);
         ChatRoom chatRoom = getChatRoomById(roomId);
-        Long targetMessageId = messageId != null ? messageId : chatRoom.getLatestMessageId();
-        markRoomAsRead(chatRoom, userId, targetMessageId);
-        
+        Long targetReadSeq = readUptoSeq != null ? readUptoSeq : chatRoom.getLastMessageSeq();
+        RoomReadUpdate readUpdate = markRoomAsRead(chatRoom, userId, targetReadSeq);
+
         // 읽음 projection reset은 chat.room.read 토픽 consumer가 Redis에 반영한다.
-        chatOutboxService.enqueueChatRoomRead(roomId, userId, targetMessageId);
+        chatOutboxService.enqueueChatRoomRead(
+            roomId,
+            userId,
+            readUpdate.previousReadSeq(),
+            readUpdate.newReadSeq()
+        );
     }
 
-    private void markRoomAsRead(ChatRoom chatRoom, Long userId, Long messageId) {
-        if (messageId == null) {
-            return;
+    private RoomReadUpdate markRoomAsRead(ChatRoom chatRoom, Long userId, Long readUptoSeq) {
+        if (readUptoSeq == null) {
+            return new RoomReadUpdate(null, null);
         }
 
-        // 1차 시도: 이미 읽음 상태 row가 있다면 "더 큰 messageId로만" 바로 갱신한다.
-        // 늦게 도착한 예전 읽음 요청(예: 100)이 최신 읽음 포인터(예: 120)를 덮어쓰지 못하게
-        // update 조건을 lastReadMessageId < newMessageId 로 제한해둔다.
-        int updated = chatReadStatusRepository.updateIfLastReadIdIsSmaller(userId, chatRoom.getId(), messageId);
+        ChatReadStatus existingReadStatus = chatReadStatusRepository.findByUserIdAndRoomId(userId, chatRoom.getId()).orElse(null);
+        Long previousReadSeq = existingReadStatus != null ? existingReadStatus.getLastReadSeq() : null;
+        if (previousReadSeq != null && previousReadSeq >= readUptoSeq) {
+            return new RoomReadUpdate(previousReadSeq, previousReadSeq);
+        }
+
+        // 1차 시도: 이미 읽음 상태 row가 있다면 "더 큰 readSeq로만" 바로 갱신한다.
+        // 늦게 도착한 예전 읽음 요청(예: seq 100)이 최신 읽음 포인터(예: seq 120)를 덮어쓰지 못하게
+        // update 조건을 lastReadSeq < newReadSeq 로 제한해둔다.
+        int updated = chatReadStatusRepository.updateIfLastReadSeqIsSmaller(userId, chatRoom.getId(), readUptoSeq);
         if (updated > 0) {
-            return;
+            return new RoomReadUpdate(previousReadSeq, readUptoSeq);
         }
 
         // 2차 시도: update가 0건이었다는 건 두 경우다.
@@ -206,16 +327,87 @@ public class ChatRoomService {
         // - 이 유저/방 조합의 읽음 상태 row가 아직 없음
         // row가 있으면 엔티티 메서드로 한 번 더 안전하게 갱신하고,
         // 없으면 처음 읽는 사용자이므로 새 ChatReadStatus를 만든다.
-        chatReadStatusRepository.findByUserIdAndRoomId(userId, chatRoom.getId())
-            .ifPresentOrElse(
-                readStatus -> readStatus.markAsRead(messageId),
-                () -> chatReadStatusRepository.save(
-                    new ChatReadStatus(
-                        userService.getUserById(userId),
-                        chatRoom,
-                        messageId))
-            );
+        if (existingReadStatus != null) {
+            existingReadStatus.markAsRead(readUptoSeq);
+            return new RoomReadUpdate(previousReadSeq, existingReadStatus.getLastReadSeq());
+        }
+
+        ChatReadStatus readStatus = chatReadStatusRepository.save(
+            new ChatReadStatus(
+                userService.getUserById(userId),
+                chatRoom,
+                readUptoSeq));
+        return new RoomReadUpdate(previousReadSeq, readStatus.getLastReadSeq());
     }
 
+    private Map<Long, Long> buildLastReadSeqByUserId(Long roomId, Long currentUserId, Long currentUserLastReadSeq) {
+        Map<Long, Long> lastReadSeqByUserId = new HashMap<>();
+        chatReadStatusRepository.findAllByChatRoomId(roomId)
+            .forEach(readStatus -> lastReadSeqByUserId.put(
+                readStatus.getUser().getId(),
+                readStatus.getLastReadSeq()
+            ));
+
+        if (currentUserLastReadSeq != null) {
+            lastReadSeqByUserId.put(currentUserId, currentUserLastReadSeq);
+        }
+        return lastReadSeqByUserId;
+    }
+
+    private Long countUnreadParticipants(
+        ChatMessage chatMessage,
+        List<ChatParticipant> participants,
+        Map<Long, Long> lastReadSeqByUserId
+    ) {
+        long unreadCount = participants.stream()
+            .map(ChatParticipant::getUser)
+            .map(User::getId)
+            .filter(participantUserId -> !participantUserId.equals(chatMessage.getSender().getId()))
+            .filter(participantUserId -> {
+                Long lastReadSeq = lastReadSeqByUserId.get(participantUserId);
+                return lastReadSeq == null || lastReadSeq < chatMessage.getMessageSeq();
+            })
+            .count();
+        return unreadCount;
+    }
+
+    private Map<Long, ChatMessage> loadLastMessages(List<ChatRoom> chatRooms) {
+        List<Long> latestMessageIds = chatRooms.stream()
+            .map(ChatRoom::getLatestMessageId)
+            .filter(java.util.Objects::nonNull)
+            .toList();
+
+        Map<Long, ChatMessage> lastMessageById = new HashMap<>();
+        if (!latestMessageIds.isEmpty()) {
+            chatMessageRepository.findAllWithSenderByIdIn(latestMessageIds)
+                .forEach(message -> lastMessageById.put(message.getId(), message));
+        }
+        return lastMessageById;
+    }
+
+    private void validateOpenGroupRoom(ChatRoom chatRoom) {
+        if (!chatRoom.isOpenChat() || chatRoom.getChatRoomType() != ChatRoomType.GROUP) {
+            throw new ForbiddenException("공개 그룹 채팅방만 참여하거나 나갈 수 있습니다.");
+        }
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String trimmed = keyword.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeDescription(String description) {
+        if (description == null) {
+            return null;
+        }
+        String trimmed = description.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private record RoomReadUpdate(Long previousReadSeq, Long newReadSeq) {
+    }
 
 }

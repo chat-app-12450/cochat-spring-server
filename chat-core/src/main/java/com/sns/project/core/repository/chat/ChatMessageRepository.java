@@ -23,7 +23,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         FROM ChatMessage cm
         JOIN FETCH cm.sender sender
         WHERE cm.chatRoom.id = :roomId
-        ORDER BY cm.id DESC
+        ORDER BY cm.messageSeq DESC
         """)
     List<ChatMessage> findRecentMessagesWithSender(
         @Param("roomId") Long roomId,
@@ -34,29 +34,28 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         FROM ChatMessage cm
         JOIN FETCH cm.sender sender
         WHERE cm.chatRoom.id = :roomId
-          AND cm.id < :beforeMessageId
-        ORDER BY cm.id DESC
+          AND cm.messageSeq < :beforeMessageSeq
+        ORDER BY cm.messageSeq DESC
         """)
-    List<ChatMessage> findMessagesWithSenderBeforeId(
+    List<ChatMessage> findMessagesWithSenderBeforeMessageSeq(
         @Param("roomId") Long roomId,
-        @Param("beforeMessageId") Long beforeMessageId,
+        @Param("beforeMessageSeq") Long beforeMessageSeq,
         Pageable pageable);
 
     @Query("SELECT cm FROM ChatMessage cm JOIN FETCH cm.sender u "
         + "WHERE cm.chatRoom.id = :chatRoomId "
-        + "ORDER BY cm.id ASC")
+        + "ORDER BY cm.messageSeq ASC")
     List<ChatMessage> findByChatRoomIdWithUser(@Param("chatRoomId") Long chatRoomId);
 
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId AND cm.id > :lastReadId")
-    List<ChatMessage> findUnreadChatMessage(@Param("roomId") Long roomId, @Param("lastReadId") Long lastReadId);
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId AND cm.messageSeq > :lastReadSeq")
+    List<ChatMessage> findUnreadChatMessage(@Param("roomId") Long roomId, @Param("lastReadSeq") Long lastReadSeq);
 
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.id DESC LIMIT 1")
-    ChatMessage findLastMessage(@Param("roomId") Long roomId);
+    ChatMessage findTopByChatRoomIdOrderByMessageSeqDesc(Long roomId);
 
     @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId")
     List<ChatMessage> findAllByRoomId(@Param("roomId") Long roomId);
 
-    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.id ASC")
+    @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.messageSeq ASC")
     List<ChatMessage> findByChatRoomId(@Param("roomId") Long roomId);
 
     // Redis unread 캐시가 비었을 때만 쓰는 복구용 COUNT 쿼리다.
@@ -70,7 +69,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
            AND cr.user.id = :userId
         WHERE cm.chatRoom.id IN :roomIds
           AND cm.sender.id <> :userId
-          AND (cr.lastReadMessageId IS NULL OR cm.id > cr.lastReadMessageId)
+          AND (cr.lastReadSeq IS NULL OR cm.messageSeq > cr.lastReadSeq)
         GROUP BY cm.chatRoom.id
         """)
     List<RoomUnreadCountProjection> countUnreadMessagesByRoomIds(
