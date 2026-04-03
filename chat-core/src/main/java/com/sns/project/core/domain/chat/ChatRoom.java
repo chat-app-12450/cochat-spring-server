@@ -68,12 +68,15 @@ public class ChatRoom {
     @JoinColumn(name = "product_id")
     private Product product;
 
+    // 마지막 보낸 메시지의 아이디
     @Column(name = "latest_message_id")
     private Long latestMessageId;
 
+    // 마지막 보낸 메시지의 시각
     @Column(name = "latest_message_at")
     private LocalDateTime latestMessageAt;
 
+    // 마지막 보낸 메시지의 시퀀스(방 내에서 순서)
     @Column(name = "last_message_seq", nullable = false)
     @Builder.Default
     private Long lastMessageSeq = 0L;

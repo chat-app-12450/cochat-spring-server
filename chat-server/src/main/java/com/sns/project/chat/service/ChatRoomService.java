@@ -11,6 +11,7 @@ import com.sns.project.core.domain.product.Product;
 import com.sns.project.core.repository.chat.ChatMessageRepository;
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
 import com.sns.project.core.repository.chat.ChatReadStatusRepository;
+import com.sns.project.core.repository.chat.MessageUnreadCountProjection;
 import com.sns.project.core.exception.forbidden.ForbiddenException;
 import com.sns.project.core.exception.badRequest.RegisterFailedException;
 import com.sns.project.core.exception.notfound.NotFoundProductException;
@@ -30,9 +31,9 @@ import java.util.stream.Collectors;
 
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
+import com.sns.project.core.domain.user.User;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
 import com.sns.project.user.UserService;
-import com.sns.project.core.domain.user.User;
 
 @Service
 @RequiredArgsConstructor
@@ -266,11 +267,7 @@ public class ChatRoomService {
             readUpdate.newReadSeq()
         );
 
-        Map<Long, Long> lastReadSeqByUserId = buildLastReadSeqByUserId(
-            roomId,
-            userId,
-            readUpdate.newReadSeq()
-        );
+        Map<Long, Long> unreadCountByMessageId = loadUnreadCounts(chatMessages);
         List<ChatHistoryResponse> messages = chatMessages.stream()
             .map(chatMessage -> new ChatHistoryResponse(
                 chatMessage.getId(),
@@ -278,7 +275,7 @@ public class ChatRoomService {
                 chatMessage.getMessage(),
                 chatMessage.getSender().getId(),
                 chatMessage.getReceivedAt(),
-                countUnreadParticipants(chatMessage, chatRoom.getParticipants(), lastReadSeqByUserId)))
+                unreadCountByMessageId.getOrDefault(chatMessage.getId(), 0L)))
             .collect(Collectors.toList());
 
         // reverse 이후 첫 메시지가 "이번 페이지에서 가장 오래된 메시지"다.
@@ -340,35 +337,21 @@ public class ChatRoomService {
         return new RoomReadUpdate(previousReadSeq, readStatus.getLastReadSeq());
     }
 
-    private Map<Long, Long> buildLastReadSeqByUserId(Long roomId, Long currentUserId, Long currentUserLastReadSeq) {
-        Map<Long, Long> lastReadSeqByUserId = new HashMap<>();
-        chatReadStatusRepository.findAllByChatRoomId(roomId)
-            .forEach(readStatus -> lastReadSeqByUserId.put(
-                readStatus.getUser().getId(),
-                readStatus.getLastReadSeq()
-            ));
-
-        if (currentUserLastReadSeq != null) {
-            lastReadSeqByUserId.put(currentUserId, currentUserLastReadSeq);
+    private Map<Long, Long> loadUnreadCounts(List<ChatMessage> chatMessages) {
+        Map<Long, Long> unreadCountByMessageId = new HashMap<>();
+        if (chatMessages.isEmpty()) {
+            return unreadCountByMessageId;
         }
-        return lastReadSeqByUserId;
-    }
 
-    private Long countUnreadParticipants(
-        ChatMessage chatMessage,
-        List<ChatParticipant> participants,
-        Map<Long, Long> lastReadSeqByUserId
-    ) {
-        long unreadCount = participants.stream()
-            .map(ChatParticipant::getUser)
-            .map(User::getId)
-            .filter(participantUserId -> !participantUserId.equals(chatMessage.getSender().getId()))
-            .filter(participantUserId -> {
-                Long lastReadSeq = lastReadSeqByUserId.get(participantUserId);
-                return lastReadSeq == null || lastReadSeq < chatMessage.getMessageSeq();
-            })
-            .count();
-        return unreadCount;
+        List<Long> messageIds = chatMessages.stream()
+            .map(ChatMessage::getId)
+            .toList();
+
+        List<MessageUnreadCountProjection> unreadCounts = chatMessageRepository.countUnreadParticipantsByMessageIds(messageIds);
+        for (MessageUnreadCountProjection unreadCount : unreadCounts) {
+            unreadCountByMessageId.put(unreadCount.getMessageId(), unreadCount.getUnreadCount());
+        }
+        return unreadCountByMessageId;
     }
 
     private Map<Long, ChatMessage> loadLastMessages(List<ChatRoom> chatRooms) {
