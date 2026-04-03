@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
+  Optional<ChatRoom> findFirstByNameAndOpenChatTrueOrderByIdAsc(String name);
+
   // DISTINCT:
   // - participants fetch join 때문에 채팅방이 참가자 수만큼 중복 row 로 늘어나는 것을 정리한다.
   // EXISTS:
