@@ -287,10 +287,12 @@ public class ChatRoomService {
                 unreadCountByMessageId.getOrDefault(chatMessage.getId(), 0L)))
             .collect(Collectors.toList());
 
+        Map<Long, Long> readSeqSnapshot = buildReadSeqSnapshot(activeParticipants(chatRoom.getParticipants()));
+
         // reverse 이후 첫 메시지가 "이번 페이지에서 가장 오래된 메시지"다.
         // 다음 요청은 이 seq보다 더 작은 메시지들만 가져오면 되므로 before 커서로 내려준다.
         Long nextBeforeMessageSeq = hasMore && !messages.isEmpty() ? messages.get(0).getMessageSeq() : null;
-        return new ChatHistoryPageResponse(messages, nextBeforeMessageSeq, hasMore);
+        return new ChatHistoryPageResponse(messages, nextBeforeMessageSeq, hasMore, readSeqSnapshot);
     }
 
     @Transactional
@@ -394,6 +396,14 @@ public class ChatRoomService {
             unreadCountByMessageId.put(unreadCount.getMessageId(), unreadCount.getUnreadCount());
         }
         return unreadCountByMessageId;
+    }
+
+    private Map<Long, Long> buildReadSeqSnapshot(List<ChatParticipant> participants) {
+        Map<Long, Long> readSeqSnapshot = new HashMap<>();
+        for (ChatParticipant participant : participants) {
+            readSeqSnapshot.put(participant.getUser().getId(), participant.getLastReadSeq());
+        }
+        return readSeqSnapshot;
     }
 
     private Map<Long, ChatMessage> loadLastMessages(List<ChatRoom> chatRooms) {
