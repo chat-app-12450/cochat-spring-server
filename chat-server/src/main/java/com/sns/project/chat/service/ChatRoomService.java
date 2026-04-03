@@ -65,7 +65,7 @@ public class ChatRoomService {
         }
 
         return chatRoomRepository.findPrivateProductRoomByProductIdAndParticipantIds(productId, sellerId, buyerId)
-            .map(chatRoom -> new RoomInfoResponse(chatRoom, chatRoom.getParticipants(), buyerId, null))
+            .map(chatRoom -> new RoomInfoResponse(chatRoom, activeParticipants(chatRoom.getParticipants()), buyerId, null))
             .orElseGet(() -> {
                 User buyer = userService.getUserById(buyerId);
                 return createRoom(product.getTitle(), List.of(sellerId), buyer, product, null, false, null);
@@ -84,7 +84,9 @@ public class ChatRoomService {
             .build();
         chatRoomRepository.save(chatRoom);
 
-        ChatParticipant creatorParticipant = chatParticipantRepository.save(new ChatParticipant(chatRoom, creator));
+        ChatParticipant creatorParticipant = chatParticipantRepository.save(
+            new ChatParticipant(chatRoom, creator, 1L, null, 0L)
+        );
         return new RoomInfoResponse(chatRoom, List.of(creatorParticipant), creator.getId(), null);
     }
 
@@ -113,7 +115,7 @@ public class ChatRoomService {
         List<ChatParticipant> chatParticipants = new ArrayList<>();
         for (User participant : participants) {
             // 채팅방 참여자 목록 데이터베이스 저장
-            ChatParticipant chatParticipant = new ChatParticipant(chatRoom, participant);
+            ChatParticipant chatParticipant = new ChatParticipant(chatRoom, participant, 1L, null, 0L);
             chatParticipants.add(chatParticipantRepository.save(chatParticipant));
         }
         return new RoomInfoResponse(chatRoom, chatParticipants, creator.getId(), null);
@@ -127,7 +129,7 @@ public class ChatRoomService {
         return groupRooms.stream()
             .map(chatRoom -> new RoomInfoResponse(
                 chatRoom,
-                chatRoom.getParticipants(),
+                activeParticipants(chatRoom.getParticipants()),
                 userId,
                 lastMessageById.get(chatRoom.getLatestMessageId())))
             .collect(Collectors.toList());
@@ -141,7 +143,7 @@ public class ChatRoomService {
         return groupRooms.stream()
             .map(chatRoom -> new RoomInfoResponse(
                 chatRoom,
-                chatRoom.getParticipants(),
+                activeParticipants(chatRoom.getParticipants()),
                 userId,
                 lastMessageById.get(chatRoom.getLatestMessageId())))
             .collect(Collectors.toList());
@@ -153,18 +155,19 @@ public class ChatRoomService {
             .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
         validateOpenGroupRoom(chatRoom);
 
-        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)) {
-            if (chatRoom.getMaxParticipants() != null && chatRoom.getParticipants().size() >= chatRoom.getMaxParticipants()) {
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)) {
+            if (chatRoom.getMaxParticipants() != null && activeParticipants(chatRoom.getParticipants()).size() >= chatRoom.getMaxParticipants()) {
                 throw new RegisterFailedException("채팅방 정원이 가득 찼습니다.");
             }
             User user = userService.getUserById(userId);
-            chatParticipantRepository.save(new ChatParticipant(chatRoom, user));
+            Long joinSeq = chatRoom.getLastMessageSeq() + 1L;
+            chatParticipantRepository.save(new ChatParticipant(chatRoom, user, joinSeq, null, chatRoom.getLastMessageSeq()));
             chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
         }
 
         Map<Long, ChatMessage> lastMessageById = loadLastMessages(List.of(chatRoom));
-        return new RoomInfoResponse(chatRoom, chatRoom.getParticipants(), userId, lastMessageById.get(chatRoom.getLatestMessageId()));
+        return new RoomInfoResponse(chatRoom, activeParticipants(chatRoom.getParticipants()), userId, lastMessageById.get(chatRoom.getLatestMessageId()));
     }
 
     @Transactional
@@ -173,11 +176,13 @@ public class ChatRoomService {
             .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
         validateOpenGroupRoom(chatRoom);
 
-        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)) {
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)) {
             throw new ForbiddenException("채팅방 참여자가 아닙니다.");
         }
 
-        chatParticipantRepository.deleteByChatRoomIdAndUserId(roomId, userId);
+        ChatParticipant participant = chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId)
+            .orElseThrow(() -> new ForbiddenException("채팅방 참여자가 아닙니다."));
+        participant.leave(chatRoom.getLastMessageSeq() + 1L);
     }
 
     @Transactional(readOnly = true)
@@ -216,7 +221,7 @@ public class ChatRoomService {
         return chatRooms.stream()
             .map(chatRoom -> new RoomInfoResponse(
                 chatRoom,
-                chatRoom.getParticipants(),
+                activeParticipants(chatRoom.getParticipants()),
                 userId,
                 lastMessageById.get(chatRoom.getLatestMessageId()),
                 unreadCountByRoomId.getOrDefault(chatRoom.getId(), 0L)))
@@ -229,7 +234,7 @@ public class ChatRoomService {
 
     @Transactional(readOnly = true)
     public void requireParticipant(Long roomId, Long userId) {
-        if (!chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)) {
+        if (!chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)) {
             throw new ForbiddenException("채팅방 접근 권한이 없습니다.");
         }
     }
@@ -261,6 +266,7 @@ public class ChatRoomService {
         Collections.reverse(chatMessages);
 
         RoomReadUpdate readUpdate = markRoomAsRead(chatRoom, userId, chatRoom.getLastMessageSeq());
+        syncParticipantReadSeq(roomId, userId, readUpdate.newReadSeq());
         chatOutboxService.enqueueChatRoomRead(
             roomId,
             userId,
@@ -291,6 +297,7 @@ public class ChatRoomService {
         ChatRoom chatRoom = getChatRoomById(roomId);
         Long targetReadSeq = readUptoSeq != null ? readUptoSeq : chatRoom.getLastMessageSeq();
         RoomReadUpdate readUpdate = markRoomAsRead(chatRoom, userId, targetReadSeq);
+        syncParticipantReadSeq(roomId, userId, readUpdate.newReadSeq());
 
         // 읽음 projection reset은 chat.room.read 토픽 consumer가 Redis에 반영한다.
         chatOutboxService.enqueueChatRoomRead(
@@ -346,6 +353,15 @@ public class ChatRoomService {
         return new RoomReadUpdate(previousReadSeq, refreshedReadStatus.getLastReadSeq());
     }
 
+    private void syncParticipantReadSeq(Long roomId, Long userId, Long readSeq) {
+        if (readSeq == null) {
+            return;
+        }
+        ChatParticipant participant = chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId)
+            .orElseThrow(() -> new IllegalStateException("활성 참여자를 찾을 수 없습니다."));
+        participant.markAsRead(readSeq);
+    }
+
     private Map<Long, Long> loadUnreadCounts(List<ChatMessage> chatMessages) {
         Map<Long, Long> unreadCountByMessageId = new HashMap<>();
         if (chatMessages.isEmpty()) {
@@ -375,6 +391,12 @@ public class ChatRoomService {
                 .forEach(message -> lastMessageById.put(message.getId(), message));
         }
         return lastMessageById;
+    }
+
+    private List<ChatParticipant> activeParticipants(List<ChatParticipant> participants) {
+        return participants.stream()
+            .filter(ChatParticipant::isActive)
+            .toList();
     }
 
     private void validateOpenGroupRoom(ChatRoom chatRoom) {

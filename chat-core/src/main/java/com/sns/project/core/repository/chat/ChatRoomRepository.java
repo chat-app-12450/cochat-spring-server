@@ -28,6 +28,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
         FROM ChatParticipant cp
         WHERE cp.chatRoom = c
           AND cp.user.id = :userId
+          AND cp.leaveSeq IS NULL
       )
         AND c.openChat = false
       ORDER BY
@@ -47,16 +48,17 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
         AND product.id = :productId
         AND EXISTS (
           SELECT 1 FROM ChatParticipant cp
-          WHERE cp.chatRoom = c AND cp.user.id = :sellerId
+          WHERE cp.chatRoom = c AND cp.user.id = :sellerId AND cp.leaveSeq IS NULL
         )
         AND EXISTS (
           SELECT 1 FROM ChatParticipant cp
-          WHERE cp.chatRoom = c AND cp.user.id = :buyerId
+          WHERE cp.chatRoom = c AND cp.user.id = :buyerId AND cp.leaveSeq IS NULL
         )
         AND (
           SELECT COUNT(cp)
           FROM ChatParticipant cp
           WHERE cp.chatRoom = c
+            AND cp.leaveSeq IS NULL
         ) = 2
       """)
   Optional<ChatRoom> findPrivateProductRoomByProductIdAndParticipantIds(
@@ -102,6 +104,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
           FROM ChatParticipant cp
           WHERE cp.chatRoom = c
             AND cp.user.id = :userId
+            AND cp.leaveSeq IS NULL
       )
       ORDER BY
         CASE WHEN c.latestMessageAt IS NULL THEN 1 ELSE 0 END,

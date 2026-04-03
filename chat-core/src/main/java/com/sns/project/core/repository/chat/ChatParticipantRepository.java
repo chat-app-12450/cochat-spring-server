@@ -15,17 +15,16 @@ public interface ChatParticipantRepository extends JpaRepository<ChatParticipant
     List<ChatParticipant> findByChatRoom(ChatRoom chatRoom);
     List<ChatParticipant> findByUser(User user);
     boolean existsByChatRoomAndUser(ChatRoom chatRoom, User user);
-    boolean existsByChatRoomIdAndUserId(Long roomId, Long userId);
-    Optional<ChatParticipant> findByChatRoomIdAndUserId(Long roomId, Long userId);
-    void deleteByChatRoomIdAndUserId(Long roomId, Long userId);
+    boolean existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(Long roomId, Long userId);
+    Optional<ChatParticipant> findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(Long roomId, Long userId);
     
-    @Query("SELECT cp.chatRoom FROM ChatParticipant cp WHERE cp.user.id = :userId")
+    @Query("SELECT cp.chatRoom FROM ChatParticipant cp WHERE cp.user.id = :userId AND cp.leaveSeq IS NULL")
     List<ChatRoom> findChatRoomsByUserId(@Param("userId") Long userId);
 
-    @Query("SELECT cp.user.id FROM ChatParticipant cp WHERE cp.chatRoom.id = :chatRoomId")
+    @Query("SELECT cp.user.id FROM ChatParticipant cp WHERE cp.chatRoom.id = :chatRoomId AND cp.leaveSeq IS NULL")
     Set<Long> findUserIdsByChatRoomId(@Param("chatRoomId") Long chatRoomId);
-    Long countByChatRoomId(Long roomId);
+    Long countByChatRoomIdAndLeaveSeqIsNull(Long roomId);
 
-    @Query("SELECT cp.user.id FROM ChatParticipant cp WHERE cp.chatRoom.id = :chatRoomId")
-    List<Long> findParticipantIdsByRoomId(@Param("chatRoomId") Long chatRoomId);
-} 
+    @Query("SELECT cp.user.id FROM ChatParticipant cp WHERE cp.chatRoom.id = :chatRoomId AND cp.leaveSeq IS NULL")
+    List<Long> findActiveParticipantIdsByRoomId(@Param("chatRoomId") Long chatRoomId);
+}

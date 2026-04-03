@@ -2,9 +2,11 @@ package com.sns.project.chat.service;
 
 import com.sns.project.chat.outbox.ChatOutboxService;
 import com.sns.project.core.domain.chat.ChatMessage;
+import com.sns.project.core.domain.chat.ChatParticipant;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.user.User;
 import com.sns.project.core.repository.chat.ChatMessageRepository;
+import com.sns.project.core.repository.chat.ChatParticipantRepository;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
 import com.sns.project.core.repository.user.UserRepository;
 import com.sns.project.core.exception.notfound.ChatRoomNotFoundException;
@@ -23,6 +25,7 @@ public class ChatService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ChatParticipantRepository chatParticipantRepository;
     private final UserRepository userRepository;
     private final ChatRoomService chatRoomService;
     private final ChatOutboxService chatOutboxService;
@@ -52,6 +55,10 @@ public class ChatService {
         Long messageSeq = chatRoom.nextMessageSeq();
         ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message, messageSeq));
         chatRoom.updateLatestMessage(savedMessage);
+        ChatParticipant senderParticipant = chatParticipantRepository
+            .findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, senderId)
+            .orElseThrow(() -> new IllegalStateException("활성 참여자를 찾을 수 없습니다."));
+        senderParticipant.markAsRead(messageSeq);
         // 메시지 저장과 원본 이벤트 적재를 같은 트랜잭션으로 묶는다.
         long unreadCount = chatRealtimeStateService.countInitialUnreadUsers(roomId, senderId);
         chatOutboxService.enqueueChatMessageCreated(savedMessage, clientMessageId, unreadCount);

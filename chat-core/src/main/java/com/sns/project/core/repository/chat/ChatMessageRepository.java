@@ -64,12 +64,11 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         SELECT cm.id AS messageId, COUNT(cp.id) AS unreadCount
         FROM ChatMessage cm
         JOIN cm.chatRoom.participants cp
-        LEFT JOIN ChatReadStatus cr
-            ON cr.chatRoom = cm.chatRoom
-           AND cr.user = cp.user
         WHERE cm.id IN :messageIds
           AND cp.user.id <> cm.sender.id
-          AND (cr.lastReadSeq IS NULL OR cr.lastReadSeq < cm.messageSeq)
+          AND cp.joinSeq <= cm.messageSeq
+          AND (cp.leaveSeq IS NULL OR cm.messageSeq < cp.leaveSeq)
+          AND cp.lastReadSeq < cm.messageSeq
         GROUP BY cm.id
         """)
     List<MessageUnreadCountProjection> countUnreadParticipantsByMessageIds(
@@ -82,12 +81,14 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("""
         SELECT cm.chatRoom.id AS roomId, COUNT(cm.id) AS unreadCount
         FROM ChatMessage cm
-        LEFT JOIN ChatReadStatus cr
-            ON cr.chatRoom = cm.chatRoom
-           AND cr.user.id = :userId
+        JOIN ChatParticipant cp
+            ON cp.chatRoom = cm.chatRoom
+           AND cp.user.id = :userId
+           AND cp.leaveSeq IS NULL
         WHERE cm.chatRoom.id IN :roomIds
+          AND cp.joinSeq <= cm.messageSeq
           AND cm.sender.id <> :userId
-          AND (cr.lastReadSeq IS NULL OR cm.messageSeq > cr.lastReadSeq)
+          AND cm.messageSeq > cp.lastReadSeq
         GROUP BY cm.chatRoom.id
         """)
     List<RoomUnreadCountProjection> countUnreadMessagesByRoomIds(

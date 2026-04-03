@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.sns.project.chat.outbox.ChatOutboxService;
+import com.sns.project.core.domain.chat.ChatParticipant;
 import com.sns.project.core.domain.chat.ChatReadStatus;
 import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
@@ -63,8 +64,11 @@ class ChatRoomServiceTest {
         User user = createUser(userId);
         ChatRoom chatRoom = createRoom(roomId, user, 20L);
         ChatReadStatus savedStatus = new ChatReadStatus(user, chatRoom, readUptoSeq);
+        ChatParticipant participant = createParticipant(chatRoom, user, 1L, 0L);
 
-        when(chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId))
+            .thenReturn(Optional.of(participant));
         when(chatRoomRepository.findById(roomId)).thenReturn(Optional.of(chatRoom));
         when(chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId)).thenReturn(Optional.empty());
         when(userService.getUserById(userId)).thenReturn(user);
@@ -86,8 +90,11 @@ class ChatRoomServiceTest {
         User user = createUser(userId);
         ChatRoom chatRoom = createRoom(roomId, user, 20L);
         ChatReadStatus existingStatus = new ChatReadStatus(user, chatRoom, previousReadSeq);
+        ChatParticipant participant = createParticipant(chatRoom, user, 1L, previousReadSeq);
 
-        when(chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId))
+            .thenReturn(Optional.of(participant));
         when(chatRoomRepository.findById(roomId)).thenReturn(Optional.of(chatRoom));
         when(chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId)).thenReturn(Optional.of(existingStatus));
 
@@ -107,8 +114,11 @@ class ChatRoomServiceTest {
         User user = createUser(userId);
         ChatRoom chatRoom = createRoom(roomId, user, 30L);
         ChatReadStatus existingStatus = new ChatReadStatus(user, chatRoom, previousReadSeq);
+        ChatParticipant participant = createParticipant(chatRoom, user, 1L, previousReadSeq);
 
-        when(chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId))
+            .thenReturn(Optional.of(participant));
         when(chatRoomRepository.findById(roomId)).thenReturn(Optional.of(chatRoom));
         when(chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId)).thenReturn(Optional.of(existingStatus));
         when(chatReadStatusRepository.updateIfLastReadSeqIsSmaller(userId, roomId, readUptoSeq)).thenReturn(1);
@@ -128,8 +138,11 @@ class ChatRoomServiceTest {
         User user = createUser(userId);
         ChatRoom chatRoom = createRoom(roomId, user, 20L);
         ChatReadStatus existingStatus = new ChatReadStatus(user, chatRoom, reloadedReadSeq);
+        ChatParticipant participant = createParticipant(chatRoom, user, 1L, reloadedReadSeq);
 
-        when(chatParticipantRepository.existsByChatRoomIdAndUserId(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.existsByChatRoomIdAndUserIdAndLeaveSeqIsNull(roomId, userId)).thenReturn(true);
+        when(chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId))
+            .thenReturn(Optional.of(participant));
         when(chatRoomRepository.findById(roomId)).thenReturn(Optional.of(chatRoom));
         when(chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId))
             .thenReturn(Optional.empty())
@@ -162,6 +175,15 @@ class ChatRoomServiceTest {
             .chatRoomType(ChatRoomType.PRIVATE)
             .creator(creator)
             .lastMessageSeq(lastMessageSeq)
+            .build();
+    }
+
+    private ChatParticipant createParticipant(ChatRoom chatRoom, User user, Long joinSeq, Long lastReadSeq) {
+        return ChatParticipant.builder()
+            .chatRoom(chatRoom)
+            .user(user)
+            .joinSeq(joinSeq)
+            .lastReadSeq(lastReadSeq)
             .build();
     }
 }

@@ -46,7 +46,7 @@ public class ChatRealtimeStateService {
 
     // 채팅방 참가자들의 방안읽음수 갱신
     public void incrementUnreadCounts(Long roomId, Long senderId) {
-        List<Long> participantIds = chatParticipantRepository.findParticipantIdsByRoomId(roomId);
+        List<Long> participantIds = chatParticipantRepository.findActiveParticipantIdsByRoomId(roomId);
         for (Long participantId : participantIds) {
             if (participantId.equals(senderId)) {
                 continue;
@@ -60,7 +60,7 @@ public class ChatRealtimeStateService {
     
     public long countInitialUnreadUsers(Long roomId, Long senderId) {
         long unreadCount = 0;
-        List<Long> participantIds = chatParticipantRepository.findParticipantIdsByRoomId(roomId);
+        List<Long> participantIds = chatParticipantRepository.findActiveParticipantIdsByRoomId(roomId);
         for (Long participantId : participantIds) {
             if (participantId.equals(senderId)) {
                 continue;
