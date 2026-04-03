@@ -23,6 +23,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Collections;
@@ -306,35 +307,43 @@ public class ChatRoomService {
         }
 
         ChatReadStatus existingReadStatus = chatReadStatusRepository.findByUserIdAndRoomId(userId, chatRoom.getId()).orElse(null);
-        Long previousReadSeq = existingReadStatus != null ? existingReadStatus.getLastReadSeq() : null;
+        // 읽음 상태가 저장되어있지 않으면 새로 생성
+        if (existingReadStatus == null) {
+            try {
+                ChatReadStatus readStatus = chatReadStatusRepository.save(
+                    new ChatReadStatus(
+                        userService.getUserById(userId),
+                        chatRoom,
+                        readUptoSeq));
+                return new RoomReadUpdate(null, readStatus.getLastReadSeq());
+            } catch (DataIntegrityViolationException e) {
+                // 동시에 최초 읽음 row를 만드는 경쟁 상황이면, 생성에 성공한 쪽의 row를 다시 읽어 이어서 처리한다.
+                existingReadStatus = chatReadStatusRepository.findByUserIdAndRoomId(userId, chatRoom.getId())
+                    .orElseThrow(() -> new IllegalStateException("읽음 상태를 찾을 수 없습니다."));
+            }
+        }
+
+        // 새로운 read seq가 더 작을 경우 업데이트 패스
+        Long previousReadSeq = existingReadStatus.getLastReadSeq();
         if (previousReadSeq != null && previousReadSeq >= readUptoSeq) {
             return new RoomReadUpdate(previousReadSeq, previousReadSeq);
         }
 
-        // 1차 시도: 이미 읽음 상태 row가 있다면 "더 큰 readSeq로만" 바로 갱신한다.
-        // 늦게 도착한 예전 읽음 요청(예: seq 100)이 최신 읽음 포인터(예: seq 120)를 덮어쓰지 못하게
-        // update 조건을 lastReadSeq < newReadSeq 로 제한해둔다.
+        // 기존 row가 있다면 "더 큰 readSeq로만" 바로 갱신한다.
+        // 늦게 도착한 예전 읽음 요청이 최신 포인터를 덮어쓰지 못하게 update 조건을 lastReadSeq < newReadSeq 로 제한한다.
         int updated = chatReadStatusRepository.updateIfLastReadSeqIsSmaller(userId, chatRoom.getId(), readUptoSeq);
         if (updated > 0) {
             return new RoomReadUpdate(previousReadSeq, readUptoSeq);
         }
 
-        // 2차 시도: update가 0건이었다는 건 두 경우다.
-        // - 이미 더 큰 읽음 포인터가 저장돼 있어서 갱신할 필요가 없음
-        // - 이 유저/방 조합의 읽음 상태 row가 아직 없음
-        // row가 있으면 엔티티 메서드로 한 번 더 안전하게 갱신하고,
-        // 없으면 처음 읽는 사용자이므로 새 ChatReadStatus를 만든다.
-        if (existingReadStatus != null) {
-            existingReadStatus.markAsRead(readUptoSeq);
-            return new RoomReadUpdate(previousReadSeq, existingReadStatus.getLastReadSeq());
-        }
-
-        ChatReadStatus readStatus = chatReadStatusRepository.save(
-            new ChatReadStatus(
-                userService.getUserById(userId),
-                chatRoom,
-                readUptoSeq));
-        return new RoomReadUpdate(previousReadSeq, readStatus.getLastReadSeq());
+        // 여기까지 왔다는 건 "내가 기대한 UPDATE가 0건"이었다는 뜻이다.
+        // 대표적인 경우는 동시성이다.
+        // 예를 들어 내가 10 -> 20으로 올리려는 사이에 다른 요청이 먼저 25로 올려버리면
+        // WHERE last_read_seq < 20 조건이 더 이상 맞지 않아 update가 적용되지 않는다.
+        // 이 경우를 실패로 보지 않고, DB의 최종 상태를 다시 읽어 실제 저장된 최신 읽음 포인터를 반환한다.
+        ChatReadStatus refreshedReadStatus = chatReadStatusRepository.findByUserIdAndRoomId(userId, chatRoom.getId())
+            .orElseThrow(() -> new IllegalStateException("읽음 상태를 찾을 수 없습니다."));
+        return new RoomReadUpdate(previousReadSeq, refreshedReadStatus.getLastReadSeq());
     }
 
     private Map<Long, Long> loadUnreadCounts(List<ChatMessage> chatMessages) {
