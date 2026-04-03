@@ -57,15 +57,14 @@ public class ChatRealtimeStateService {
             chatRedisService.incrementHash(unreadCountKey(participantId), String.valueOf(roomId), 1);
         }
     }
-    
-    public long countInitialUnreadUsers(Long roomId, Long senderId) {
+
+    // 메시지별 unreadCount 초기값은 현재 active 멤버 전체를 기준으로 잡고,
+    // 이후 READ 이벤트로만 감소시킨다.
+    public long countInitialMessageUnreadUsers(Long roomId, Long senderId) {
         long unreadCount = 0;
         List<Long> participantIds = chatParticipantRepository.findActiveParticipantIdsByRoomId(roomId);
         for (Long participantId : participantIds) {
             if (participantId.equals(senderId)) {
-                continue;
-            }
-            if (isUserActiveInRoom(roomId, participantId)) {
                 continue;
             }
             unreadCount += 1;

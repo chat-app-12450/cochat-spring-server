@@ -245,6 +245,7 @@ public class ChatRoomService {
         requireParticipant(roomId, userId);
         ChatRoom chatRoom = chatRoomRepository.findByIdWithParticipants(roomId)
             .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+        ChatParticipant activeParticipant = getActiveParticipant(roomId, userId);
 
         // DB는 조건에 맞는 전체 집합을 먼저 정렬한 뒤 LIMIT를 적용한다.
         // 따라서 `message_seq < beforeMessageSeq` 조건에서 ASC + LIMIT를 쓰면
@@ -266,11 +267,12 @@ public class ChatRoomService {
         Collections.reverse(chatMessages);
 
         RoomReadUpdate readUpdate = markRoomAsRead(chatRoom, userId, chatRoom.getLastMessageSeq());
-        syncParticipantReadSeq(roomId, userId, readUpdate.newReadSeq());
+        Long previousBroadcastReadSeq = resolvePreviousBroadcastReadSeq(activeParticipant.getLastReadSeq(), readUpdate.previousReadSeq());
+        syncParticipantReadSeq(activeParticipant, readUpdate.newReadSeq());
         chatOutboxService.enqueueChatRoomRead(
             roomId,
             userId,
-            readUpdate.previousReadSeq(),
+            previousBroadcastReadSeq,
             readUpdate.newReadSeq()
         );
 
@@ -295,15 +297,17 @@ public class ChatRoomService {
     public void markRoomAsRead(Long roomId, Long userId, Long readUptoSeq) {
         requireParticipant(roomId, userId);
         ChatRoom chatRoom = getChatRoomById(roomId);
+        ChatParticipant activeParticipant = getActiveParticipant(roomId, userId);
         Long targetReadSeq = readUptoSeq != null ? readUptoSeq : chatRoom.getLastMessageSeq();
         RoomReadUpdate readUpdate = markRoomAsRead(chatRoom, userId, targetReadSeq);
-        syncParticipantReadSeq(roomId, userId, readUpdate.newReadSeq());
+        Long previousBroadcastReadSeq = resolvePreviousBroadcastReadSeq(activeParticipant.getLastReadSeq(), readUpdate.previousReadSeq());
+        syncParticipantReadSeq(activeParticipant, readUpdate.newReadSeq());
 
         // 읽음 projection reset은 chat.room.read 토픽 consumer가 Redis에 반영한다.
         chatOutboxService.enqueueChatRoomRead(
             roomId,
             userId,
-            readUpdate.previousReadSeq(),
+            previousBroadcastReadSeq,
             readUpdate.newReadSeq()
         );
     }
@@ -353,13 +357,26 @@ public class ChatRoomService {
         return new RoomReadUpdate(previousReadSeq, refreshedReadStatus.getLastReadSeq());
     }
 
-    private void syncParticipantReadSeq(Long roomId, Long userId, Long readSeq) {
+    private ChatParticipant getActiveParticipant(Long roomId, Long userId) {
+        return chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId)
+            .orElseThrow(() -> new IllegalStateException("활성 참여자를 찾을 수 없습니다."));
+    }
+
+    private void syncParticipantReadSeq(ChatParticipant participant, Long readSeq) {
         if (readSeq == null) {
             return;
         }
-        ChatParticipant participant = chatParticipantRepository.findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, userId)
-            .orElseThrow(() -> new IllegalStateException("활성 참여자를 찾을 수 없습니다."));
         participant.markAsRead(readSeq);
+    }
+
+    private Long resolvePreviousBroadcastReadSeq(Long participantReadSeq, Long persistedReadSeq) {
+        if (participantReadSeq == null) {
+            return persistedReadSeq;
+        }
+        if (persistedReadSeq == null) {
+            return participantReadSeq;
+        }
+        return Math.max(participantReadSeq, persistedReadSeq);
     }
 
     private Map<Long, Long> loadUnreadCounts(List<ChatMessage> chatMessages) {

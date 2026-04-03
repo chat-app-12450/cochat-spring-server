@@ -78,7 +78,7 @@ class ChatRoomServiceTest {
 
         verify(chatReadStatusRepository).save(any(ChatReadStatus.class));
         verify(chatReadStatusRepository, never()).updateIfLastReadSeqIsSmaller(any(), any(), any());
-        verify(chatOutboxService).enqueueChatRoomRead(roomId, userId, null, readUptoSeq);
+        verify(chatOutboxService).enqueueChatRoomRead(roomId, userId, 0L, readUptoSeq);
     }
 
     @Test
