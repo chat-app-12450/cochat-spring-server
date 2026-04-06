@@ -78,6 +78,10 @@ app:
     topics:
       chat-message-created: ${KAFKA_TOPIC_CHAT_MESSAGE_CREATED:chat.message.created}
       chat-room-read: ${KAFKA_TOPIC_CHAT_ROOM_READ:chat.room.read}
+      chat-dlq: ${KAFKA_TOPIC_CHAT_DLQ:chat.dlq}
+    consumer:
+      max-retry-count: ${KAFKA_CONSUMER_MAX_RETRY_COUNT:3}
+      retry-backoff-ms: ${KAFKA_CONSUMER_RETRY_BACKOFF_MS:1000}
   outbox:
     relay:
       fixed-delay-ms: ${OUTBOX_RELAY_FIXED_DELAY_MS:1000}

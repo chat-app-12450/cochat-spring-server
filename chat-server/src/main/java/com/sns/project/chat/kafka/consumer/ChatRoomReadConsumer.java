@@ -25,7 +25,7 @@ public class ChatRoomReadConsumer {
     @KafkaListener(
         topics = "${app.kafka.topics.chat-room-read}",
         groupId = "chat-unread",
-        containerFactory = "outboxStringKafkaListenerContainerFactory"
+        containerFactory = "chatUnreadKafkaListenerContainerFactory"
     )
     public void consume(String payload, Acknowledgment ack) throws Exception {
         ChatRoomReadKafkaEvent readEvent = objectMapper.readValue(payload, ChatRoomReadKafkaEvent.class);

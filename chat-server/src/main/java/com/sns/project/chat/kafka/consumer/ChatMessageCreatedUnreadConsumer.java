@@ -22,7 +22,7 @@ public class ChatMessageCreatedUnreadConsumer {
     @KafkaListener(
         topics = "${app.kafka.topics.chat-message-created}",
         groupId = "chat-unread",
-        containerFactory = "outboxStringKafkaListenerContainerFactory"
+        containerFactory = "chatUnreadKafkaListenerContainerFactory"
     )
     public void consume(String payload, Acknowledgment ack) throws Exception {
         KafkaNewMsgRequest unreadEvent = objectMapper.readValue(payload, KafkaNewMsgRequest.class);

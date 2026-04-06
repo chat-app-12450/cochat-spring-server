@@ -24,7 +24,7 @@ public class ChatMessageCreatedBroadcastConsumer {
     @KafkaListener(
         topics = "${app.kafka.topics.chat-message-created}",
         groupId = "chat-broadcast",
-        containerFactory = "outboxStringKafkaListenerContainerFactory"
+        containerFactory = "chatBroadcastKafkaListenerContainerFactory"
     )
     public void consume(String payload, Acknowledgment ack) throws Exception {
         KafkaNewMsgRequest broadcastMessage = objectMapper.readValue(payload, KafkaNewMsgRequest.class);

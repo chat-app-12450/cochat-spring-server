@@ -17,6 +17,9 @@ public class KafkaTopicConfig {
   @Value("${app.kafka.topics.chat-room-read}")
   private String chatRoomReadTopicName;
 
+  @Value("${app.kafka.topics.chat-dlq}")
+  private String chatDlqTopicName;
+
   @Bean
   public NewTopic chatMessageCreatedTopic() {
     return TopicBuilder.name(chatMessageCreatedTopicName)
@@ -28,6 +31,14 @@ public class KafkaTopicConfig {
   @Bean
   public NewTopic chatRoomReadTopic() {
     return TopicBuilder.name(chatRoomReadTopicName)
+        .partitions(6)
+        .replicas(1)
+        .build();
+  }
+
+  @Bean
+  public NewTopic chatDlqTopic() {
+    return TopicBuilder.name(chatDlqTopicName)
         .partitions(6)
         .replicas(1)
         .build();

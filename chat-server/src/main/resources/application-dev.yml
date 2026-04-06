@@ -66,6 +66,10 @@ app:
     topics:
       chat-message-created: chat.message.created
       chat-room-read: chat.room.read
+      chat-dlq: chat.dlq
+    consumer:
+      max-retry-count: 3
+      retry-backoff-ms: 1000
   outbox:
     relay:
       fixed-delay-ms: 1000
