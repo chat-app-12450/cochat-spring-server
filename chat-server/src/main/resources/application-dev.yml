@@ -15,7 +15,7 @@ spring:
         enable.idempotence: true
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/chatdb
+    url: jdbc:postgresql://localhost:5433/chatdb
     username: chat
     password: chat1234
     driver-class-name: org.postgresql.Driver
@@ -26,11 +26,16 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     properties:
       hibernate:
         show_sql: false    # SQL 쿼리 숨기기
         format_sql: false  # SQL 포맷팅 비활성화
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
 
 logging.level:
   org.hibernate.SQL: OFF   # Hibernate SQL 로깅 끄기

@@ -12,6 +12,7 @@ import com.sns.project.core.repository.chat.ChatMessageRepository;
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
 import com.sns.project.core.repository.chat.ChatReadStatusRepository;
 import com.sns.project.core.repository.chat.MessageUnreadCountProjection;
+import com.sns.project.core.repository.chat.NearbyOpenChatRoomProjection;
 import com.sns.project.core.exception.forbidden.ForbiddenException;
 import com.sns.project.core.exception.badRequest.RegisterFailedException;
 import com.sns.project.core.exception.notfound.NotFoundProductException;
@@ -34,6 +35,7 @@ import com.sns.project.core.domain.chat.ChatRoom;
 import com.sns.project.core.domain.chat.ChatRoomType;
 import com.sns.project.core.domain.user.User;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
+import com.sns.project.user.UserLocationVerificationService;
 import com.sns.project.user.UserService;
 
 @Service
@@ -48,6 +50,7 @@ public class ChatRoomService {
     private final ChatRealtimeStateService chatRealtimeStateService;
     private final ChatOutboxService chatOutboxService;
     private final ProductRepository productRepository;
+    private final UserLocationVerificationService userLocationVerificationService;
 
     @Transactional
     public RoomInfoResponse createRoom(String name, List<Long> participantIds, User creator) {
@@ -73,16 +76,30 @@ public class ChatRoomService {
     }
 
     @Transactional
-    public RoomInfoResponse createOpenGroupRoom(String name, String description, Integer maxParticipants, User creator) {
+    public RoomInfoResponse createOpenGroupRoom(
+        String name,
+        String description,
+        Integer maxParticipants,
+        User creator
+    ) {
+        var verifiedLocation = userLocationVerificationService.getRequiredVerifiedLocation(creator.getId());
         ChatRoom chatRoom = ChatRoom.builder()
             .name(name.trim())
             .description(normalizeDescription(description))
             .chatRoomType(ChatRoomType.GROUP)
             .openChat(true)
             .maxParticipants(maxParticipants)
+            .locationLabel(verifiedLocation.getLocationLabel())
+            .latitude(verifiedLocation.getLatitude())
+            .longitude(verifiedLocation.getLongitude())
             .creator(creator)
             .build();
         chatRoomRepository.save(chatRoom);
+        chatRoomRepository.updateLocation(
+            chatRoom.getId(),
+            verifiedLocation.getLatitude(),
+            verifiedLocation.getLongitude()
+        );
 
         ChatParticipant creatorParticipant = chatParticipantRepository.save(
             new ChatParticipant(chatRoom, creator, 1L, null, 0L)
@@ -122,8 +139,32 @@ public class ChatRoomService {
     }
 
     @Transactional(readOnly = true)
-    public List<RoomInfoResponse> searchOpenGroupRooms(String keyword, Long userId) {
-        List<ChatRoom> groupRooms = chatRoomRepository.searchOpenGroupRooms(normalizeKeyword(keyword));
+    public List<RoomInfoResponse> searchOpenGroupRooms(
+        String keyword,
+        Long userId,
+        Double latitude,
+        Double longitude,
+        Double radiusKm
+    ) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        if (latitude != null && longitude != null) {
+            return searchNearbyOpenGroupRooms(normalizedKeyword, userId, latitude, longitude, radiusKm);
+        }
+
+        var verifiedLocation = userLocationVerificationService.getCurrentVerifiedLocation(userId);
+        if (verifiedLocation != null
+            && verifiedLocation.getLatitude() != null
+            && verifiedLocation.getLongitude() != null) {
+            return searchNearbyOpenGroupRooms(
+                normalizedKeyword,
+                userId,
+                verifiedLocation.getLatitude(),
+                verifiedLocation.getLongitude(),
+                radiusKm
+            );
+        }
+
+        List<ChatRoom> groupRooms = chatRoomRepository.searchOpenGroupRooms(normalizedKeyword);
         Map<Long, ChatMessage> lastMessageById = loadLastMessages(groupRooms);
 
         return groupRooms.stream()
@@ -133,6 +174,54 @@ public class ChatRoomService {
                 userId,
                 lastMessageById.get(chatRoom.getLatestMessageId())))
             .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    private List<RoomInfoResponse> searchNearbyOpenGroupRooms(
+        String keyword,
+        Long userId,
+        Double latitude,
+        Double longitude,
+        Double radiusKm
+    ) {
+        double safeRadiusKm = radiusKm == null ? 3.0d : Math.max(radiusKm, 0.3d);
+        List<NearbyOpenChatRoomProjection> nearbyRoomProjections = chatRoomRepository.findNearbyOpenChatRooms(
+            keyword,
+            latitude,
+            longitude,
+            safeRadiusKm * 1000d,
+            50
+        );
+
+        if (nearbyRoomProjections.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> roomIds = nearbyRoomProjections.stream()
+            .map(NearbyOpenChatRoomProjection::getRoomId)
+            .toList();
+        Map<Long, Double> distanceMetersByRoomId = nearbyRoomProjections.stream()
+            .collect(Collectors.toMap(
+                NearbyOpenChatRoomProjection::getRoomId,
+                NearbyOpenChatRoomProjection::getDistanceMeters
+            ));
+
+        List<ChatRoom> rooms = chatRoomRepository.findAllWithParticipantsByIdIn(roomIds);
+        Map<Long, ChatRoom> roomById = rooms.stream()
+            .collect(Collectors.toMap(ChatRoom::getId, room -> room));
+        Map<Long, ChatMessage> lastMessageById = loadLastMessages(rooms);
+
+        return roomIds.stream()
+            .map(roomById::get)
+            .filter(java.util.Objects::nonNull)
+            .map(chatRoom -> new RoomInfoResponse(
+                chatRoom,
+                activeParticipants(chatRoom.getParticipants()),
+                userId,
+                lastMessageById.get(chatRoom.getLatestMessageId()),
+                0L,
+                distanceMetersByRoomId.get(chatRoom.getId())))
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -445,6 +534,14 @@ public class ChatRoomService {
             return null;
         }
         String trimmed = description.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeLocationLabel(String locationLabel) {
+        if (locationLabel == null) {
+            return null;
+        }
+        String trimmed = locationLabel.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 

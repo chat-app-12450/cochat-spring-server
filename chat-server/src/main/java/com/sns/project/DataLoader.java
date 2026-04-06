@@ -7,6 +7,7 @@ import com.sns.project.core.domain.user.User;
 import com.sns.project.core.repository.chat.ChatRoomRepository;
 import com.sns.project.core.repository.user.UserRepository;
 import com.sns.project.follow.FollowingService;
+import com.sns.project.user.UserLocationVerificationService;
 import com.sns.project.user.UserService;
 import com.sns.project.user.dto.request.RequestRegisterDto;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class DataLoader implements CommandLineRunner {
     private final FollowingService followingService;
     private final ChatRoomService chatRoomService;
     private final ChatRoomRepository chatRoomRepository;
+    private final UserLocationVerificationService userLocationVerificationService;
 
     @Override
     public void run(String... args) {
@@ -86,6 +88,9 @@ public class DataLoader implements CommandLineRunner {
             "성수 직거래 오픈채팅",
             "동네 직거래 테스트용 공개 채팅방",
             50,
+            "성수동",
+            37.5447,
+            127.0557,
             1L
         );
         joinIfNeeded(neighborhoodRoomId, 2L, 3L, 4L);
@@ -94,17 +99,34 @@ public class DataLoader implements CommandLineRunner {
             "대학생 중고거래 오픈채팅",
             "캠퍼스 근처 거래 테스트용 공개 채팅방",
             30,
+            "건대입구",
+            37.5404,
+            127.0693,
             2L
         );
         joinIfNeeded(campusRoomId, 1L, 5L, 6L);
     }
 
-    private Long getOrCreateOpenChatRoom(String name, String description, int maxParticipants, Long creatorId) {
+    private Long getOrCreateOpenChatRoom(
+        String name,
+        String description,
+        int maxParticipants,
+        String locationLabel,
+        double latitude,
+        double longitude,
+        Long creatorId
+    ) {
         return chatRoomRepository.findFirstByNameAndOpenChatTrueOrderByIdAsc(name)
             .map(ChatRoom::getId)
             .orElseGet(() -> {
                 User creator = userService.getUserById(creatorId);
-                RoomInfoResponse room = chatRoomService.createOpenGroupRoom(name, description, maxParticipants, creator);
+                userLocationVerificationService.verifyLocation(creatorId, locationLabel, latitude, longitude);
+                RoomInfoResponse room = chatRoomService.createOpenGroupRoom(
+                    name,
+                    description,
+                    maxParticipants,
+                    creator
+                );
                 return room.getId();
             });
     }

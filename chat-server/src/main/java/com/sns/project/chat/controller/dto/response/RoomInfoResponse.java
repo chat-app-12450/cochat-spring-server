@@ -22,6 +22,10 @@ public class RoomInfoResponse {
     private boolean joined;
     private int participantCount;
     private Integer maxParticipants;
+    private String locationLabel;
+    private Double latitude;
+    private Double longitude;
+    private Double distanceMeters;
     private ProductResponse product;
     private ParticipantResponse counterpart;
     private LastMessageResponse lastMessage;
@@ -29,15 +33,30 @@ public class RoomInfoResponse {
     private List<ParticipantResponse> participants;
 
     public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants, Long currentUserId, ChatMessage lastMessage) {
-        this(chatRoom, participants, currentUserId, lastMessage, 0L);
+        this(chatRoom, participants, currentUserId, lastMessage, 0L, null);
     }
 
     public RoomInfoResponse(ChatRoom chatRoom, List<ChatParticipant> participants, Long currentUserId, ChatMessage lastMessage, long unreadCount) {
+        this(chatRoom, participants, currentUserId, lastMessage, unreadCount, null);
+    }
+
+    public RoomInfoResponse(
+        ChatRoom chatRoom,
+        List<ChatParticipant> participants,
+        Long currentUserId,
+        ChatMessage lastMessage,
+        long unreadCount,
+        Double distanceMeters
+    ) {
         this.id = chatRoom.getId();
         this.name = chatRoom.getName();
         this.description = chatRoom.getDescription();
         this.type = chatRoom.getChatRoomType();
         this.openChat = chatRoom.isOpenChat();
+        this.locationLabel = chatRoom.getLocationLabel();
+        this.latitude = chatRoom.getLatitude();
+        this.longitude = chatRoom.getLongitude();
+        this.distanceMeters = distanceMeters;
         this.product = chatRoom.getProduct() != null ? new ProductResponse(chatRoom.getProduct()) : null;
         this.participants = participants.stream()
             .map(ParticipantResponse::new)

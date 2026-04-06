@@ -27,7 +27,7 @@ spring:
         enable.idempotence: true
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/chatdb
+    url: jdbc:postgresql://localhost:5433/chatdb
     username: chat
     password: chat1234
     driver-class-name: org.postgresql.Driver

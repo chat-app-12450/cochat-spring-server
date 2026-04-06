@@ -24,6 +24,9 @@ public class ProductDetailResponse {
     private String reservedBuyerName;
     private String soldBuyerUserId;
     private String soldBuyerName;
+    private String locationLabel;
+    private Double latitude;
+    private Double longitude;
     private List<String> imageUrls;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -43,6 +46,9 @@ public class ProductDetailResponse {
             .reservedBuyerName(product.getReservedBuyer() != null ? product.getReservedBuyer().getName() : null)
             .soldBuyerUserId(product.getSoldBuyer() != null ? product.getSoldBuyer().getUserId() : null)
             .soldBuyerName(product.getSoldBuyer() != null ? product.getSoldBuyer().getName() : null)
+            .locationLabel(product.getLocationLabel())
+            .latitude(product.getLatitude())
+            .longitude(product.getLongitude())
             .imageUrls(product.getImages().stream().map(image -> image.getImageUrl()).toList())
             .createdAt(product.getCreatedAt())
             .updatedAt(product.getUpdatedAt())
