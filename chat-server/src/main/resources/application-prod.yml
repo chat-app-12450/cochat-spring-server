@@ -1,22 +1,13 @@
 spring:
   frontend:
     url: ${FRONT_END_URL}
-    
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS} # ex) my-kafka.kafka.svc.cluster.local:9092
-    properties:
-      security.protocol: SASL_SSL
-      sasl.mechanism: SCRAM-SHA-256
-      sasl.jaas.config: >
-        org.apache.kafka.common.security.scram.ScramLoginModule required
-        username="user1" password="${KAFKA_PASSWORD}";
-      ssl.truststore.location: /app/config/kafka.truststore.jks
-      ssl.truststore.password: ${KAFKA_TRUSTSTORE_PASSWORD}
-      ssl.truststore.type: JKS
     consumer:
       auto-offset-reset: earliest
       enable-auto-commit: false
-        
+
     producer:
       acks: all
       retries: ${KAFKA_PRODUCER_RETRIES:2147483647}
@@ -32,8 +23,8 @@ spring:
   redis:
     host: ${REDIS_HOST}     # ex) my-redis-master.redis.svc.cluster.local
     port: ${REDIS_PORT:6379}
-    password: ${REDIS_PASSWORD}          # ← 필요
-    username: ${REDIS_USERNAME:default} 
+    password: ${REDIS_PASSWORD:}
+    username: ${REDIS_USERNAME:default}
 
   jpa:
     hibernate:
@@ -59,7 +50,7 @@ logging:
 jwt:
   expiration: ${JWT_EXPIRATION:900000}   # 15m
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}   # 7d
-  secret: ${JWT_SECRET}                    # 반드시 Secret로 주입
+  secret: ${JWT_SECRET:dev-jwt-secret-change-me}
 
 app:
   auth:
