@@ -34,7 +34,7 @@ pipeline {
 
     stage('Build Jar') {
       steps {
-        sh './gradlew :chat-server:bootJar'
+        sh './gradlew --no-daemon :chat-server:bootJar'
       }
     }
 
