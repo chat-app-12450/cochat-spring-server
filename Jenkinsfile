@@ -41,12 +41,12 @@ pipeline {
     stage('Build And Push Image') {
       steps {
         withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-          sh """
-            ./gradlew --no-daemon :chat-server:jib \\
-              -Djib.to.image=${params.DOCKER_IMAGE_REPOSITORY}:${env.RESOLVED_IMAGE_TAG} \\
-              -Djib.to.auth.username=$DOCKER_USERNAME \\
-              -Djib.to.auth.password=$DOCKER_PASSWORD
-          """
+          sh '''
+            ./gradlew --no-daemon :chat-server:jib \
+              -Djib.to.image="${DOCKER_IMAGE_REPOSITORY}:${RESOLVED_IMAGE_TAG}" \
+              -Djib.to.auth.username="$DOCKER_USERNAME" \
+              -Djib.to.auth.password="$DOCKER_PASSWORD"
+          '''
         }
       }
     }
@@ -55,6 +55,12 @@ pipeline {
       steps {
         sshagent(credentials: ['github-ssh']) {
           sh '''
+            mkdir -p "$HOME/.ssh"
+            chmod 700 "$HOME/.ssh"
+            touch "$HOME/.ssh/known_hosts"
+            chmod 600 "$HOME/.ssh/known_hosts"
+            ssh-keyscan -H github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+
             rm -rf "$INFRA_DIR"
             git clone --depth 1 --branch "$INFRA_BRANCH" "$INFRA_REPO_URL" "$INFRA_DIR"
 
