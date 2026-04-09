@@ -38,22 +38,15 @@ pipeline {
       }
     }
 
-    stage('Docker Build') {
-      steps {
-        dir('chat-server') {
-          sh "docker build -t ${params.DOCKER_IMAGE_REPOSITORY}:${env.RESOLVED_IMAGE_TAG} ."
-        }
-      }
-    }
-
-    stage('Docker Push') {
+    stage('Build And Push Image') {
       steps {
         withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-          sh '''
-            echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin docker.io
-            docker push "${DOCKER_IMAGE_REPOSITORY}:${RESOLVED_IMAGE_TAG}"
-            docker logout docker.io
-          '''
+          sh """
+            ./gradlew --no-daemon :chat-server:jib \\
+              -Djib.to.image=${params.DOCKER_IMAGE_REPOSITORY}:${env.RESOLVED_IMAGE_TAG} \\
+              -Djib.to.auth.username=$DOCKER_USERNAME \\
+              -Djib.to.auth.password=$DOCKER_PASSWORD
+          """
         }
       }
     }
