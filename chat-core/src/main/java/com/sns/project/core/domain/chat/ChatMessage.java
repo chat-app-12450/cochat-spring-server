@@ -49,6 +49,9 @@ public class ChatMessage {
     @Column(name = "message_seq", nullable = false)
     private Long messageSeq;
 
+    @Column(name = "unread_count", nullable = false)
+    private Long unreadCount;
+
     @Column(nullable = false)
     private String message;
 
@@ -56,10 +59,11 @@ public class ChatMessage {
     private LocalDateTime receivedAt; // 서버가 받은 시각
     
 
-    public ChatMessage(ChatRoom chatRoom, User sender, String message, Long messageSeq) {
+    public ChatMessage(ChatRoom chatRoom, User sender, String message, Long messageSeq, Long unreadCount) {
         this.chatRoom = chatRoom;
         this.sender = sender;
         this.messageSeq = messageSeq;
+        this.unreadCount = unreadCount != null ? unreadCount : 0L;
         this.message = message;
         // this.clientMessageId = clientMessageId;
         this.receivedAt = LocalDateTime.now();

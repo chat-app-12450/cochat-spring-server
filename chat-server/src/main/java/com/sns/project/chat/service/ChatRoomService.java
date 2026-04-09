@@ -11,7 +11,6 @@ import com.sns.project.core.domain.product.Product;
 import com.sns.project.core.repository.chat.ChatMessageRepository;
 import com.sns.project.core.repository.chat.ChatParticipantRepository;
 import com.sns.project.core.repository.chat.ChatReadStatusRepository;
-import com.sns.project.core.repository.chat.MessageUnreadCountProjection;
 import com.sns.project.core.repository.chat.NearbyOpenChatRoomProjection;
 import com.sns.project.core.exception.forbidden.ForbiddenException;
 import com.sns.project.core.exception.badRequest.RegisterFailedException;
@@ -365,7 +364,6 @@ public class ChatRoomService {
             readUpdate.newReadSeq()
         );
 
-        Map<Long, Long> unreadCountByMessageId = loadUnreadCounts(chatMessages);
         List<ChatHistoryResponse> messages = chatMessages.stream()
             .map(chatMessage -> new ChatHistoryResponse(
                 chatMessage.getId(),
@@ -373,7 +371,7 @@ public class ChatRoomService {
                 chatMessage.getMessage(),
                 chatMessage.getSender().getId(),
                 chatMessage.getReceivedAt(),
-                unreadCountByMessageId.getOrDefault(chatMessage.getId(), 0L)))
+                chatMessage.getUnreadCount()))
             .collect(Collectors.toList());
 
         Map<Long, Long> readSeqSnapshot = buildReadSeqSnapshot(activeParticipants(chatRoom.getParticipants()));
@@ -468,23 +466,6 @@ public class ChatRoomService {
             return participantReadSeq;
         }
         return Math.max(participantReadSeq, persistedReadSeq);
-    }
-
-    private Map<Long, Long> loadUnreadCounts(List<ChatMessage> chatMessages) {
-        Map<Long, Long> unreadCountByMessageId = new HashMap<>();
-        if (chatMessages.isEmpty()) {
-            return unreadCountByMessageId;
-        }
-
-        List<Long> messageIds = chatMessages.stream()
-            .map(ChatMessage::getId)
-            .toList();
-
-        List<MessageUnreadCountProjection> unreadCounts = chatMessageRepository.countUnreadParticipantsByMessageIds(messageIds);
-        for (MessageUnreadCountProjection unreadCount : unreadCounts) {
-            unreadCountByMessageId.put(unreadCount.getMessageId(), unreadCount.getUnreadCount());
-        }
-        return unreadCountByMessageId;
     }
 
     private Map<Long, Long> buildReadSeqSnapshot(List<ChatParticipant> participants) {

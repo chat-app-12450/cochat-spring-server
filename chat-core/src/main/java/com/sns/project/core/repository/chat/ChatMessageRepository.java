@@ -5,6 +5,7 @@ import com.sns.project.core.domain.chat.ChatRoom;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -58,21 +59,21 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.messageSeq ASC")
     List<ChatMessage> findByChatRoomId(@Param("roomId") Long roomId);
 
-    // 히스토리 한 페이지에 포함된 메시지들에 대해서만 unreadCount를 DB에서 집계한다.
-    // sender는 제외하고, 각 참가자의 lastReadSeq가 messageSeq보다 작은 경우만 unread로 센다.
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-        SELECT cm.id AS messageId, COUNT(cp.id) AS unreadCount
-        FROM ChatMessage cm
-        JOIN cm.chatRoom.participants cp
-        WHERE cm.id IN :messageIds
-          AND cp.user.id <> cm.sender.id
-          AND cp.joinSeq <= cm.messageSeq
-          AND (cp.leaveSeq IS NULL OR cm.messageSeq < cp.leaveSeq)
-          AND cp.lastReadSeq < cm.messageSeq
-        GROUP BY cm.id
+        UPDATE ChatMessage cm
+        SET cm.unreadCount = cm.unreadCount - 1
+        WHERE cm.chatRoom.id = :roomId
+          AND cm.messageSeq > :previousReadSeq
+          AND cm.messageSeq <= :newReadSeq
+          AND cm.sender.id <> :readerId
+          AND cm.unreadCount > 0
         """)
-    List<MessageUnreadCountProjection> countUnreadParticipantsByMessageIds(
-        @Param("messageIds") List<Long> messageIds
+    int decrementUnreadCountInRange(
+        @Param("roomId") Long roomId,
+        @Param("readerId") Long readerId,
+        @Param("previousReadSeq") Long previousReadSeq,
+        @Param("newReadSeq") Long newReadSeq
     );
 
     // Redis unread 캐시가 비었을 때만 쓰는 복구용 COUNT 쿼리다.

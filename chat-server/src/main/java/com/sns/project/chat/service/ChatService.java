@@ -53,14 +53,16 @@ public class ChatService {
         User sender = getUserById(senderId);
 
         Long messageSeq = chatRoom.nextMessageSeq();
-        ChatMessage savedMessage = chatMessageRepository.save(new ChatMessage(chatRoom, sender, message, messageSeq));
+        long unreadCount = chatRealtimeStateService.countInitialMessageUnreadUsers(roomId, senderId);
+        ChatMessage savedMessage = chatMessageRepository.save(
+            new ChatMessage(chatRoom, sender, message, messageSeq, unreadCount)
+        );
         chatRoom.updateLatestMessage(savedMessage);
         ChatParticipant senderParticipant = chatParticipantRepository
             .findTopByChatRoomIdAndUserIdAndLeaveSeqIsNullOrderByIdDesc(roomId, senderId)
             .orElseThrow(() -> new IllegalStateException("활성 참여자를 찾을 수 없습니다."));
         senderParticipant.markAsRead(messageSeq);
         // 메시지 저장과 원본 이벤트 적재를 같은 트랜잭션으로 묶는다.
-        long unreadCount = chatRealtimeStateService.countInitialMessageUnreadUsers(roomId, senderId);
         chatOutboxService.enqueueChatMessageCreated(savedMessage, clientMessageId, unreadCount);
         
         return savedMessage;
