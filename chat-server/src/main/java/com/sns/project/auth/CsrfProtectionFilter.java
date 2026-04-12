@@ -7,8 +7,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -55,26 +53,13 @@ public class CsrfProtectionFilter extends OncePerRequestFilter {
         // 로그인된 브라우저가 보낸 변경 요청이라면
         // 1) 브라우저가 자동으로 싣는 CSRF 쿠키와
         // 2) 프론트 JS가 직접 복사해서 넣은 헤더 값을 비교한다.
-        String csrfCookie = authCookieService.extractCsrfToken(request).orElse(null);
         String csrfHeader = request.getHeader(authCookieService.getCsrfHeaderName());
-        if (!isValidCsrf(csrfCookie, csrfHeader)) {
+        if (!authCookieService.matchesAnyCsrfToken(request, csrfHeader)) {
             writeForbidden(response);
             return;
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isValidCsrf(String csrfCookie, String csrfHeader) {
-        // 두 위치의 값이 모두 있어야 하고, 정확히 일치해야만 정상 요청으로 본다.
-        if (!StringUtils.hasText(csrfCookie) || !StringUtils.hasText(csrfHeader)) {
-            return false;
-        }
-
-        return MessageDigest.isEqual(
-            csrfCookie.getBytes(StandardCharsets.UTF_8),
-            csrfHeader.getBytes(StandardCharsets.UTF_8)
-        );
     }
 
     private void writeForbidden(HttpServletResponse response) throws IOException {
