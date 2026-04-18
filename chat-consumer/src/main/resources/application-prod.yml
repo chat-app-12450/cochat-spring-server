@@ -28,7 +28,7 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
     redis:
@@ -69,7 +69,7 @@ app:
 # Kafka 환경변수:
 # - KAFKA_BOOTSTRAP_SERVERS
 # 
-# PostgreSQL 환경변수:
+# MySQL 환경변수:
 # - DB_URL, DB_USERNAME, DB_PASSWORD
 # 
 # Redis 환경변수:

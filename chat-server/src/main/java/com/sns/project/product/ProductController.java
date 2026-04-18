@@ -66,19 +66,6 @@ public class ProductController {
         return ApiResult.success(productService.getProducts(status, page, size));
     }
 
-    @GetMapping("/nearby")
-    @AuthRequired
-    @Operation(summary = "근처 상품 조회", description = "인증된 현재 위치 기준 반경 안의 상품 목록을 거리순으로 조회합니다.")
-    public ApiResult<ProductListResponse> getNearbyProducts(
-        @RequestParam(name = "status", required = false) ProductStatus status,
-        @RequestParam(name = "radius_km", required = false) @Positive(message = "radius_km는 0보다 커야 합니다.") Double radiusKm,
-        @RequestParam(name = "page", defaultValue = "0") @PositiveOrZero(message = "page는 0 이상이어야 합니다.") int page,
-        @RequestParam(name = "size", defaultValue = "20") @Positive(message = "size는 1 이상이어야 합니다.")
-        @Max(value = 100, message = "size는 100 이하여야 합니다.") int size) {
-        Long userId = UserContext.getUserId();
-        return ApiResult.success(productService.getNearbyProducts(userId, status, page, size, radiusKm));
-    }
-
     @GetMapping("/me")
     @AuthRequired
     @Operation(summary = "내 상품 목록 조회", description = "로그인한 사용자가 등록한 상품 목록을 조회합니다.")

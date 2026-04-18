@@ -7,9 +7,7 @@ import com.sns.project.user.dto.request.RequestRegisterDto;
 import com.sns.project.user.dto.request.LoginRequestDto;
 import com.sns.project.user.dto.request.RequestPasswordResetDto;
 import com.sns.project.user.dto.request.ResetPasswordDto;
-import com.sns.project.user.dto.request.VerifyUserLocationRequest;
 import com.sns.project.user.dto.response.ResponseUserDto;
-import com.sns.project.user.dto.response.UserVerifiedLocationResponse;
 import com.sns.project.core.domain.user.User;
 import com.sns.project.core.exception.unauthorized.UnauthorizedException;
 import com.sns.project.common.api.ApiResult;
@@ -64,7 +62,6 @@ public class UserController {
   private final TokenService tokenService;
   private final AuthCookieService authCookieService;
   private final UserService userService;
-  private final UserLocationVerificationService userLocationVerificationService;
   @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다")
   @ApiResponses({
     @ApiResponse(responseCode = "200", description = "회원가입 성공"),
@@ -153,19 +150,5 @@ public ApiResult<ResponseUserDto> validateToken(HttpServletRequest request) {
   public ApiResult<String> searchUser(@RequestParam @NotBlank(message = "userId는 비어 있을 수 없습니다.") @Size(max = 30, message = "userId는 30자 이하여야 합니다.") String userId) {
    userService.findByUserId(userId);
     return ApiResult.success("사용자를 찾았습니다: " + userId);
-  }
-
-  @PostMapping("/location/verify")
-  @AuthRequired
-  public ApiResult<UserVerifiedLocationResponse> verifyLocation(@Valid @RequestBody VerifyUserLocationRequest request) {
-    Long userId = UserContext.getUserId();
-    return ApiResult.success(userLocationVerificationService.verifyLocation(userId, request));
-  }
-
-  @GetMapping("/location")
-  @AuthRequired
-  public ApiResult<UserVerifiedLocationResponse> getVerifiedLocation() {
-    Long userId = UserContext.getUserId();
-    return ApiResult.success(userLocationVerificationService.getCurrentVerifiedLocation(userId));
   }
 }

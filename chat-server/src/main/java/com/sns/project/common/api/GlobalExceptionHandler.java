@@ -2,7 +2,6 @@ package com.sns.project.common.api;
 
 import jakarta.validation.ConstraintViolationException;
 import com.sns.project.core.exception.badRequest.InvalidFormatRequestException;
-import com.sns.project.core.exception.badRequest.LocationVerificationRequiredException;
 import com.sns.project.core.exception.conflict.ProductStateConflictException;
 import com.sns.project.core.exception.forbidden.ForbiddenException;
 import com.sns.project.core.exception.notfound.NotFoundUserException;
@@ -83,8 +82,7 @@ public class GlobalExceptionHandler {
    */
   @ExceptionHandler({
       RegisterFailedException.class,
-      InvalidFormatRequestException.class,
-      LocationVerificationRequiredException.class
+      InvalidFormatRequestException.class
   })
   public ResponseEntity<?> handleBadRequest(RuntimeException ex) {
     return newResponse(ex, HttpStatus.BAD_REQUEST);

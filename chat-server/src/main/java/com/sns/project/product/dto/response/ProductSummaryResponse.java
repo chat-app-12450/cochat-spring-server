@@ -17,15 +17,9 @@ public class ProductSummaryResponse {
     private String thumbnailUrl;
     private String sellerUserId;
     private String sellerName;
-    private String locationLabel;
-    private Double distanceMeters;
     private LocalDateTime createdAt;
 
     public static ProductSummaryResponse from(Product product) {
-        return from(product, null);
-    }
-
-    public static ProductSummaryResponse from(Product product, Double distanceMeters) {
         String thumbnailUrl = product.getImages().isEmpty() ? null : product.getImages().get(0).getImageUrl();
         return ProductSummaryResponse.builder()
             .id(product.getId())
@@ -35,8 +29,6 @@ public class ProductSummaryResponse {
             .thumbnailUrl(thumbnailUrl)
             .sellerUserId(product.getSeller().getUserId())
             .sellerName(product.getSeller().getName())
-            .locationLabel(product.getLocationLabel())
-            .distanceMeters(distanceMeters)
             .createdAt(product.getCreatedAt())
             .build();
     }

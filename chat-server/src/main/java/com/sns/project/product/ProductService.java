@@ -13,10 +13,8 @@ import com.sns.project.core.domain.user.User;
 import com.sns.project.core.exception.forbidden.ForbiddenException;
 import com.sns.project.core.exception.notfound.NotFoundProductException;
 import com.sns.project.core.exception.notfound.NotFoundUserException;
-import com.sns.project.core.repository.product.NearbyProductProjection;
 import com.sns.project.core.repository.product.ProductRepository;
 import com.sns.project.core.repository.user.UserRepository;
-import com.sns.project.user.UserLocationVerificationService;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -35,13 +33,11 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final UserLocationVerificationService userLocationVerificationService;
 
     @Transactional
     public ProductDetailResponse createProduct(Long sellerId, CreateProductRequest request) {
         User seller = userRepository.findById(sellerId)
             .orElseThrow(() -> new NotFoundUserException(String.valueOf(sellerId)));
-        var verifiedLocation = userLocationVerificationService.getRequiredVerifiedLocation(sellerId);
 
         Product product = Product.builder()
             .title(request.getTitle())
@@ -49,21 +45,11 @@ public class ProductService {
             .price(request.getPrice())
             .status(ProductStatus.ON_SALE)
             .build();
-        product.updateLocation(
-            verifiedLocation.getLocationLabel(),
-            verifiedLocation.getLatitude(),
-            verifiedLocation.getLongitude()
-        );
 
         seller.addProduct(product);
         product.replaceImages(toProductImages(request.getImageUrls()));
 
         Product savedProduct = productRepository.save(product);
-        productRepository.updateLocation(
-            savedProduct.getId(),
-            verifiedLocation.getLatitude(),
-            verifiedLocation.getLongitude()
-        );
         return ProductDetailResponse.from(savedProduct);
     }
 
@@ -75,32 +61,6 @@ public class ProductService {
             : productRepository.findPageIdsByStatusOrderByCreatedAtDesc(status, pageable);
 
         return buildProductListResponse(productIdPage, page, size);
-    }
-
-    @Transactional(readOnly = true)
-    public ProductListResponse getNearbyProducts(Long userId, ProductStatus status, int page, int size, Double radiusKm) {
-        var verifiedLocation = userLocationVerificationService.getRequiredVerifiedLocation(userId);
-        double searchRadiusKm = radiusKm != null && radiusKm > 0 ? radiusKm : 3.0;
-        double radiusMeters = searchRadiusKm * 1000.0;
-        int offset = page * size;
-
-        List<NearbyProductProjection> nearbyProducts = productRepository.findNearbyProducts(
-            verifiedLocation.getLatitude(),
-            verifiedLocation.getLongitude(),
-            radiusMeters,
-            status != null ? status.name() : null,
-            size,
-            offset
-        );
-
-        long totalCount = productRepository.countNearbyProducts(
-            verifiedLocation.getLatitude(),
-            verifiedLocation.getLongitude(),
-            radiusMeters,
-            status != null ? status.name() : null
-        );
-
-        return buildNearbyProductListResponse(nearbyProducts, totalCount, page, size);
     }
 
     @Transactional(readOnly = true)
@@ -209,57 +169,6 @@ public class ProductService {
             .totalPages(productIdPage.getTotalPages())
             .hasNext(productIdPage.hasNext())
             .hasPrevious(productIdPage.hasPrevious())
-            .products(responses)
-            .build();
-    }
-
-    private ProductListResponse buildNearbyProductListResponse(
-        List<NearbyProductProjection> nearbyProducts,
-        long totalCount,
-        int page,
-        int size
-    ) {
-        if (nearbyProducts.isEmpty()) {
-            int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
-            return ProductListResponse.builder()
-                .page(page)
-                .size(size)
-                .count(0)
-                .totalCount(totalCount)
-                .totalPages(totalPages)
-                .hasNext(page + 1 < totalPages)
-                .hasPrevious(page > 0)
-                .products(List.of())
-                .build();
-        }
-
-        List<Long> productIds = nearbyProducts.stream()
-            .map(NearbyProductProjection::getProductId)
-            .toList();
-        Map<Long, Integer> order = new HashMap<>();
-        Map<Long, Double> distanceByProductId = new HashMap<>();
-        for (int index = 0; index < nearbyProducts.size(); index++) {
-            NearbyProductProjection projection = nearbyProducts.get(index);
-            order.put(projection.getProductId(), index);
-            distanceByProductId.put(projection.getProductId(), projection.getDistanceMeters());
-        }
-
-        List<Product> products = productRepository.findAllWithSellerAndImagesByIdIn(productIds);
-        products.sort(Comparator.comparingInt(product -> order.get(product.getId())));
-
-        List<ProductSummaryResponse> responses = products.stream()
-            .map(product -> ProductSummaryResponse.from(product, distanceByProductId.get(product.getId())))
-            .toList();
-
-        int totalPages = totalCount == 0 ? 0 : (int) Math.ceil((double) totalCount / size);
-        return ProductListResponse.builder()
-            .page(page)
-            .size(size)
-            .count(responses.size())
-            .totalCount(totalCount)
-            .totalPages(totalPages)
-            .hasNext(page + 1 < totalPages)
-            .hasPrevious(page > 0)
             .products(responses)
             .build();
     }

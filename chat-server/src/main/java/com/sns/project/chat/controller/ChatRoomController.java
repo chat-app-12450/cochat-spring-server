@@ -60,12 +60,9 @@ public class ChatRoomController {
     @GetMapping("/open-rooms")
     @AuthRequired
     public ApiResult<RoomListResponse> searchOpenGroupRooms(
-        @RequestParam(name = "keyword", required = false) String keyword,
-        @RequestParam(name = "latitude", required = false) Double latitude,
-        @RequestParam(name = "longitude", required = false) Double longitude,
-        @RequestParam(name = "radius_km", required = false) @Positive(message = "radius_km는 0보다 커야 합니다.") Double radiusKm) {
+        @RequestParam(name = "keyword", required = false) String keyword) {
         Long userId = UserContext.getUserId();
-        return ApiResult.success(new RoomListResponse(chatRoomService.searchOpenGroupRooms(keyword, userId, latitude, longitude, radiusKm)));
+        return ApiResult.success(new RoomListResponse(chatRoomService.searchOpenGroupRooms(keyword, userId)));
     }
 
     @GetMapping("/open-rooms/joined")

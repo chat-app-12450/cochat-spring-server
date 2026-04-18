@@ -31,8 +31,7 @@ import lombok.NoArgsConstructor;
     name = "products",
     indexes = {
         @Index(name = "idx_products_status_created_at", columnList = "status, created_at"),
-        @Index(name = "idx_products_seller_created_at", columnList = "seller_id, created_at"),
-        @Index(name = "idx_products_lat_lng", columnList = "latitude, longitude")
+        @Index(name = "idx_products_seller_created_at", columnList = "seller_id, created_at")
     })
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -63,15 +62,6 @@ public class Product extends BaseTimeEntity {
 
     @Column(nullable = false)
     private Long price;
-
-    @Column(name = "location_label", length = 120)
-    private String locationLabel;
-
-    @Column(name = "latitude")
-    private Double latitude;
-
-    @Column(name = "longitude")
-    private Double longitude;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -114,12 +104,6 @@ public class Product extends BaseTimeEntity {
         this.title = title;
         this.description = description;
         this.price = price;
-    }
-
-    public void updateLocation(String locationLabel, Double latitude, Double longitude) {
-        this.locationLabel = locationLabel;
-        this.latitude = latitude;
-        this.longitude = longitude;
     }
 
     public void changeStatusBySeller(ProductStatus status) {

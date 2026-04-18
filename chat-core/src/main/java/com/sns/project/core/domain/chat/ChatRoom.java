@@ -32,8 +32,7 @@ import lombok.NoArgsConstructor;
         @Index(name = "idx_chat_room_latest_message_at", columnList = "latest_message_at"),
         @Index(name = "idx_chat_room_type", columnList = "chat_room_type"),
         @Index(name = "idx_chat_room_open_chat", columnList = "open_chat"),
-        @Index(name = "idx_chat_room_last_message_seq", columnList = "last_message_seq"),
-        @Index(name = "idx_chat_room_lat_lng", columnList = "latitude, longitude")
+        @Index(name = "idx_chat_room_last_message_seq", columnList = "last_message_seq")
     })
 @Entity
 @NoArgsConstructor
@@ -60,15 +59,6 @@ public class ChatRoom {
 
     @Column(name = "max_participants")
     private Integer maxParticipants;
-
-    @Column(name = "location_label", length = 120)
-    private String locationLabel;
-
-    @Column(name = "latitude")
-    private Double latitude;
-
-    @Column(name = "longitude")
-    private Double longitude;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", nullable = false)
@@ -104,9 +94,6 @@ public class ChatRoom {
         String description,
         boolean openChat,
         Integer maxParticipants,
-        String locationLabel,
-        Double latitude,
-        Double longitude,
         User creator,
         Product product
     ) {
@@ -115,9 +102,6 @@ public class ChatRoom {
         this.description = description;
         this.openChat = openChat;
         this.maxParticipants = maxParticipants;
-        this.locationLabel = locationLabel;
-        this.latitude = latitude;
-        this.longitude = longitude;
         this.creator = creator;
         this.product = product;
         this.lastMessageSeq = 0L;

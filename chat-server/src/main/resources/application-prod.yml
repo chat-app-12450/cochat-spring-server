@@ -15,10 +15,10 @@ spring:
         enable.idempotence: true
 
   datasource:
-    url: ${DB_URL}          # ex) jdbc:postgresql://postgres.default.svc.cluster.local:5432/chatdb
+    url: ${DB_URL}          # ex) jdbc:mysql://mysql.default.svc.cluster.local:3306/chatdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   data:
     redis:

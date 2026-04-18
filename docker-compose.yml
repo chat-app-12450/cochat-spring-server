@@ -39,17 +39,18 @@ services:
     networks:
       - monitoring_net
 
-  postgres:
-    image: postgis/postgis:16-3.4
-    container_name: postgres
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
     ports:
-      - "5433:5432"
+      - "3307:3306"
     environment:
-      POSTGRES_DB: chatdb
-      POSTGRES_USER: chat
-      POSTGRES_PASSWORD: chat1234
+      MYSQL_DATABASE: chatdb
+      MYSQL_USER: chat
+      MYSQL_PASSWORD: chat1234
+      MYSQL_ROOT_PASSWORD: root1234
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     networks:
       - monitoring_net
 
@@ -70,7 +71,7 @@ services:
 #    ports:
 #      - "8080:8080"
 #    depends_on:
-#      - postgres
+#      - mysql
 #      - redis
 #      - mongo
 #      - kafka
@@ -83,7 +84,7 @@ services:
 #      MAIL_PORT: 587
 #      MAIL_USERNAME: your_email@gmail.com
 #      MAIL_PASSWORD: your_email_password
-#      DB_URL: jdbc:postgresql://postgres:5432/chatdb
+#      DB_URL: jdbc:mysql://mysql:3306/chatdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
 #      APP_DOMAIN_URL: http://localhost:3001
 #      DB_USERNAME: chat
 #      DB_PASSWORD: chat1234
@@ -101,7 +102,7 @@ services:
 
 
 volumes:
-  postgres_data:
+  mysql_data:
   mongo_data:
 
 networks:
