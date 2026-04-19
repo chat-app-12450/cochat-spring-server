@@ -40,6 +40,11 @@ public class CorsConfig {
   }
 
   private List<String> resolveAllowedOriginPatterns(String configuredOrigin) {
+    if (configuredOrigin == null || configuredOrigin.isBlank() || "*".equals(configuredOrigin.trim())) {
+      // 도메인 없이 ALB 기본 DNS 로 검증할 때는 요청 Origin 을 그대로 허용한다.
+      return List.of("*");
+    }
+
     List<String> allowedOriginPatterns = new ArrayList<>();
     allowedOriginPatterns.add(configuredOrigin);
 
