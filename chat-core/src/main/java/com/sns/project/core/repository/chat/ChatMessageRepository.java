@@ -5,7 +5,6 @@ import com.sns.project.core.domain.chat.ChatRoom;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -58,23 +57,6 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     @Query("SELECT cm FROM ChatMessage cm WHERE cm.chatRoom.id = :roomId ORDER BY cm.messageSeq ASC")
     List<ChatMessage> findByChatRoomId(@Param("roomId") Long roomId);
-
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-        UPDATE ChatMessage cm
-        SET cm.unreadCount = cm.unreadCount - 1
-        WHERE cm.chatRoom.id = :roomId
-          AND cm.messageSeq > :previousReadSeq
-          AND cm.messageSeq <= :newReadSeq
-          AND cm.sender.id <> :readerId
-          AND cm.unreadCount > 0
-        """)
-    int decrementUnreadCountInRange(
-        @Param("roomId") Long roomId,
-        @Param("readerId") Long readerId,
-        @Param("previousReadSeq") Long previousReadSeq,
-        @Param("newReadSeq") Long newReadSeq
-    );
 
     // Redis unread 캐시가 비었을 때만 쓰는 복구용 COUNT 쿼리다.
     // 평소 요청마다 unread를 다시 세면 비용이 커지므로,

@@ -27,7 +27,7 @@ public class ChatOutboxService {
     @Value("${app.kafka.topics.chat-room-read}")
     private String chatRoomReadTopicName;
 
-    public void enqueueChatMessageCreated(ChatMessage chatMessage, String clientMessageId, Long unreadCount) {
+    public void enqueueChatMessageCreated(ChatMessage chatMessage, String clientMessageId) {
         KafkaNewMsgRequest payload = KafkaNewMsgRequest.builder()
             .roomId(chatMessage.getChatRoom().getId())
             .senderId(chatMessage.getSender().getId())
@@ -36,7 +36,6 @@ public class ChatOutboxService {
             .clientMessageId(clientMessageId)
             .messageId(chatMessage.getId())
             .messageSeq(chatMessage.getMessageSeq())
-            .unreadCount(unreadCount)
             .build();
 
         outboxEventRepository.save(OutboxEvent.pending(

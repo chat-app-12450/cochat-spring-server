@@ -18,6 +18,5 @@ public class ChatHistoryResponse {
     private String content;
     private Long senderId;
     private LocalDateTime createdAt;
-    private Long unreadCount;
 
 }

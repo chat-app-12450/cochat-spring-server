@@ -81,7 +81,6 @@ CREATE TABLE chat_message (
     message VARCHAR(255) NOT NULL,
     message_seq BIGINT NOT NULL,
     received_at DATETIME(6) NOT NULL,
-    unread_count BIGINT NOT NULL DEFAULT 0,
     chat_room_id BIGINT,
     sender_id BIGINT,
     PRIMARY KEY (id),

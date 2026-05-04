@@ -45,7 +45,6 @@ public class ChatMessageCreatedBroadcastConsumer {
             .senderId(broadcastMessage.getSenderId())
             .content(broadcastMessage.getContent())
             .receivedAt(broadcastMessage.getReceivedAt())
-            .unreadCount(broadcastMessage.getUnreadCount())
             .build();
 
         messagingTemplate.convertAndSend("/topic/chat/rooms/" + roomId, payload);

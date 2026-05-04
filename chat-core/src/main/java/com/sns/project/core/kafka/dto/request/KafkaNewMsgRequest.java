@@ -21,5 +21,4 @@ public class KafkaNewMsgRequest {
     private String clientMessageId;
     private Long messageId;
     private Long messageSeq;
-    private Long unreadCount;
 } 

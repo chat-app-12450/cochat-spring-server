@@ -18,5 +18,4 @@ public class MessageBroadcast {
     private Long senderId;
     private String content;
     private Long receivedAt;
-    private Long unreadCount;
 }

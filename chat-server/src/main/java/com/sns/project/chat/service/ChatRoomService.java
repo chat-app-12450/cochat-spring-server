@@ -290,8 +290,7 @@ public class ChatRoomService {
                 chatMessage.getMessageSeq(),
                 chatMessage.getMessage(),
                 chatMessage.getSender().getId(),
-                chatMessage.getReceivedAt(),
-                chatMessage.getUnreadCount()))
+                chatMessage.getReceivedAt()))
             .collect(Collectors.toList());
 
         Map<Long, Long> readSeqSnapshot = buildReadSeqSnapshot(activeParticipants(chatRoom.getParticipants()));
